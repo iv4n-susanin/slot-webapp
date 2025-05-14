@@ -181,7 +181,8 @@
       setTimeout(() => playBeep(0.1), 1);
 
       const totalSpinDuration = 7000; // Время вращения 7 секунд
-      const fallSpeed = 900; // Скорость падения символов (0.2 секунды)
+      const fallSpeed = 70; // Скорость падения символов (относительно)
+
       const steps = Math.floor(totalSpinDuration / fallSpeed); // Количество шагов
 
       const columnTasks = [];
@@ -289,12 +290,18 @@
     // Инициализация
     for (let col = 0; col < cols; col++) {
       for (let i = 0; i < rows; i++) {
-        currentGrid[col].push(symbols[Math.floor(Math.random() * symbols.length)]);
-      }
-    }
+        currentGrid[col].push(symbols[Math.floor(Math.random()
 
-    updateInfo();
-    createGridDisplay();
-  </script>
-</body>
-</html>
+
+
+
+
+ChatGPT сказал:
+symbols.length)]);
+}
+}
+createGridDisplay();
+updateInfo();
+
+</script>
+</body> </html> ```
