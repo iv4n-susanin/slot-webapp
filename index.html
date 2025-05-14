@@ -123,58 +123,18 @@
       }
     }
 
-    function playBeep(volume = 1) {
-      beep.volume = volume;
-      beep.currentTime = 0;
-      beep.play().catch(() => {});
-    }
-
-    async function spin() {
-      if (isSpinning || balance < bet) return;
-
-      isSpinning = true;
-      message.textContent = "";
-      clearFlash();
-
-      balance -= bet;
-      pot += bet;
-      updateInfo();
-      playBeep(0.1);
-
-      const totalSpinDuration = 7000; // <-- 7 секунд
-      const fallSpeed = 1;           // <-- чуть плавнее, чем раньше
-      const staggerDelay = 200;
-
-      const columnTasks = [];
-
-      for (let col = 0; col < cols; col++) {
-        columnTasks.push((async () => {
-          await new Promise(res => setTimeout(res, col * staggerDelay));
-
-          const start = Date.now();
-          while (Date.now() - start < totalSpinDuration) {
-            for (let row = rows - 1; row > 0; row--) {
-              currentGrid[col][row] = currentGrid[col][row - 1];
-            }
-            const newSymbol = symbols[Math.floor(Math.random() * symbols.length)];
-            currentGrid[col][0] = newSymbol;
-            createGridDisplay();
-            await new Promise(res => setTimeout(res, fallSpeed));
-          }
-
-          currentGrid[col] = currentGrid[col].slice(0, rows);
-        })());
-      }
-
-      await Promise.all(columnTasks);
-      createGridDisplay();
-      checkWins();
-      isSpinning = false;
-    }
-
     function clearFlash() {
       document.querySelectorAll(".cell").forEach(cell => {
         cell.classList.remove("flash");
+      });
+    }
+
+    function flashWinningCells(cells) {
+      const allCells = document.querySelectorAll(".cell");
+      cells.forEach(({ row, col }) => {
+        const index = row * cols + col;
+        const cell = allCells[index];
+        cell.classList.add("flash");
       });
     }
 
@@ -228,16 +188,55 @@
       }
     }
 
-    function flashWinningCells(cells) {
-      const allCells = document.querySelectorAll(".cell");
-      cells.forEach(({ row, col }) => {
-        const index = row * cols + col;
-        const cell = allCells[index];
-        cell.classList.add("flash");
-      });
+    async function spin() {
+      if (isSpinning || balance < bet) return;
+
+      isSpinning = true;
+      message.textContent = "";
+      clearFlash();
+
+      balance -= bet;
+      pot += bet;
+      updateInfo();
+
+      beep.volume = 0.1;
+      beep.currentTime = 0;
+      beep.play().catch(() => {});
+
+      let spinning = true;
+      beep.addEventListener("ended", () => {
+        spinning = false;
+      }, { once: true });
+
+      const fallSpeed = 20;
+      const staggerDelay = 200;
+      const columnTasks = [];
+
+      for (let col = 0; col < cols; col++) {
+        columnTasks.push((async () => {
+          await new Promise(res => setTimeout(res, col * staggerDelay));
+
+          while (spinning) {
+            for (let row = rows - 1; row > 0; row--) {
+              currentGrid[col][row] = currentGrid[col][row - 1];
+            }
+            const newSymbol = symbols[Math.floor(Math.random() * symbols.length)];
+            currentGrid[col][0] = newSymbol;
+            createGridDisplay();
+            await new Promise(res => setTimeout(res, fallSpeed));
+          }
+
+          currentGrid[col] = currentGrid[col].slice(0, rows);
+        })());
+      }
+
+      await Promise.all(columnTasks);
+      createGridDisplay();
+      checkWins();
+      isSpinning = false;
     }
 
-    // Стартовая генерация
+    // начальная генерация
     for (let col = 0; col < cols; col++) {
       for (let row = 0; row < rows; row++) {
         currentGrid[col].push(symbols[Math.floor(Math.random() * symbols.length)]);
