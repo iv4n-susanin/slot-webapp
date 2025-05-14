@@ -180,34 +180,24 @@
 
       setTimeout(() => playBeep(0.1), 1);
 
-      const totalSpinDuration = 4000; // Время вращения 7 секунд
-      const fallSpeed = 400; // Скорость падения символов (относительно)
-
-      const steps = Math.floor(totalSpinDuration / fallSpeed); // Количество шагов
+      const fallSpeed = 80;  // Скорость падения символов (в миллисекундах)
+      const totalSpinDuration = 7000;  // 7 секунд
+      const spins = Math.floor(totalSpinDuration / fallSpeed);  // Число шагов за 7 секунд
 
       const columnTasks = [];
 
       for (let col = 0; col < cols; col++) {
         columnTasks.push((async () => {
-          // Даем небольшую задержку для каждой колонки
-          await new Promise(res => setTimeout(res, col * 100));
+          await new Promise(res => setTimeout(res, col * 100));  // Слегка сдвигаем старт
 
-          const startTime = Date.now(); // Время старта вращения
-          let elapsed = 0;
-
-          // Запускаем вращение на 7 секунд
-          while (elapsed < totalSpinDuration) {
+          for (let i = 0; i < spins; i++) {
             for (let row = rows - 1; row > 0; row--) {
-              currentGrid[col][row] = currentGrid[col][row - 1]; // Перемещаем символы вниз
+              currentGrid[col][row] = currentGrid[col][row - 1];
             }
-            currentGrid[col][0] = symbols[Math.floor(Math.random() * symbols.length)]; // Новый символ
+            currentGrid[col][0] = symbols[Math.floor(Math.random() * symbols.length)];
 
-            createGridDisplay();
-
-            // Рассчитываем, сколько времени прошло
-            elapsed = Date.now() - startTime;
-
-            await new Promise(res => setTimeout(res, fallSpeed)); // Задержка между падениями
+            createGridDisplay();  // Обновляем на каждом шаге
+            await new Promise(res => setTimeout(res, fallSpeed));  // Пауза между падениями
           }
         })());
       }
@@ -251,6 +241,7 @@
           }
         }
 
+        // Проверка на крайние совпадения (в конце строки)
         if (matchCount >= 3) {
           const sym = lineSymbols[cols - 1];
           const basePayout = Math.floor(bet * payouts[sym]);
@@ -290,18 +281,12 @@
     // Инициализация
     for (let col = 0; col < cols; col++) {
       for (let i = 0; i < rows; i++) {
-        currentGrid[col].push(symbols[Math.floor(Math.random()
+        currentGrid[col].push(symbols[Math.floor(Math.random() * symbols.length)]);
+      }
+    }
 
-
-
-
-
-ChatGPT сказал:
-symbols.length)]);
-}
-}
-createGridDisplay();
-updateInfo();
-
-</script>
-</body> </html> ```
+    updateInfo();
+    createGridDisplay();
+  </script>
+</body>
+</html>
