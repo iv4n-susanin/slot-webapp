@@ -33,20 +33,21 @@
       align-items: center;
       justify-content: center;
       background-color: #585858;
+      transition: background-color 0.3s;
     }
 
     .flash {
-      animation: flash 0.6s infinite alternate;
+      animation: flash 0.5s infinite alternate;
     }
 
     @keyframes flash {
-      0% { background-color: #ff3333; }
-      100% { background-color: #585858; }
+      from { background-color: #ff3333; }
+      to { background-color: #585858; }
     }
 
     #info {
-      margin-top: 20px;
-      font-size: 1.2rem;
+      margin-top: 10px;
+      font-size: 1.1rem;
     }
 
     #message {
@@ -56,7 +57,7 @@
     }
 
     button {
-      font-size: 1.1rem;
+      font-size: 1rem;
       padding: 10px 15px;
       margin: 5px;
     }
@@ -64,6 +65,7 @@
 </head>
 <body>
   <h1>🎰 Котелок 4x4</h1>
+
   <div id="slot-grid" class="grid"></div>
 
   <button onclick="changeBet(-5)">-5</button>
@@ -71,7 +73,7 @@
   <button onclick="spin()">Крутить</button>
 
   <div id="info">💰 Баланс: 10000р | 🧮 Ставка: 5р | 🏦 Котел: 0р</div>
-  <div id="message"></div>
+  <div id="message">👋 Добро пожаловать в Котелок!</div>
 
   <audio id="beep-sound" src="beep.mp3" preload="auto"></audio>
 
@@ -109,8 +111,8 @@
         for (let col = 0; col < cols; col++) {
           const cell = document.createElement("div");
           cell.classList.add("cell");
-          const symbol = currentGrid[col][row] || "❓";
-          cell.textContent = symbol;
+          cell.dataset.index = `${row * cols + col}`;
+          cell.textContent = currentGrid[col][row] || "❓";
           grid.appendChild(cell);
         }
       }
@@ -143,7 +145,7 @@
       playBeep(0.1);
 
       const totalSpinDuration = 3000;
-      const fallSpeed = 70;
+      const fallSpeed = 60;
       const staggerDelay = 200;
 
       const columnTasks = [];
@@ -182,23 +184,24 @@
       const winningIndices = [];
 
       for (let row = 0; row < rows; row++) {
-        const symbolsInRow = [];
+        const lineSymbols = [];
         for (let col = 0; col < cols; col++) {
-          symbolsInRow.push(currentGrid[col][row]);
+          lineSymbols.push(currentGrid[col][row]);
         }
 
         const count = {};
-        symbolsInRow.forEach(sym => count[sym] = (count[sym] || 0) + 1);
+        for (let sym of lineSymbols) {
+          count[sym] = (count[sym] || 0) + 1;
+        }
 
-        for (const sym in count) {
-          const c = count[sym];
-          if (c >= 3) {
-            const payout = c === 3
+        for (let sym in count) {
+          const occurrences = count[sym];
+          if (occurrences >= 3) {
+            const payout = occurrences === 3
               ? Math.floor(bet * payouts[sym])
               : Math.floor(bet * payouts[sym] * 3);
             totalWin += payout;
 
-            // Найти ячейки с этим символом в этой строке
             for (let col = 0; col < cols; col++) {
               if (currentGrid[col][row] === sym) {
                 winningIndices.push(row * cols + col);
@@ -208,28 +211,27 @@
         }
       }
 
-      const paid = Math.min(pot, totalWin);
-      balance += paid;
-      pot -= paid;
+      const won = Math.min(totalWin, pot);
+      balance += won;
+      pot -= won;
 
+      updateInfo();
       localStorage.setItem("balance", balance);
       localStorage.setItem("pot", pot);
-      updateInfo();
 
-      if (paid > 0) {
-        message.textContent = `🎉 Вы выиграли ${paid}р!`;
+      const allCells = document.querySelectorAll(".cell");
+      winningIndices.forEach(i => {
+        allCells[i]?.classList.add("flash");
+      });
+
+      if (won > 0) {
+        message.textContent = `🎉 Вы выиграли ${won}р!`;
       } else {
         message.textContent = `😞 Увы, вы проиграли`;
       }
-
-      // Подсветка
-      const allCells = document.querySelectorAll(".cell");
-      winningIndices.forEach(i => {
-        if (allCells[i]) allCells[i].classList.add("flash");
-      });
     }
 
-    // Начальная генерация
+    // Начальное заполнение
     for (let col = 0; col < cols; col++) {
       for (let row = 0; row < rows; row++) {
         currentGrid[col].push(symbols[Math.floor(Math.random() * symbols.length)]);
@@ -241,3 +243,4 @@
   </script>
 </body>
 </html>
+
