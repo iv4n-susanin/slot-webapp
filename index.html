@@ -212,56 +212,74 @@
     }
 
     function checkWins() {
-      let totalWin = 0;
-      const winningIndices = [];
+  let totalWin = 0;
+  const winningIndices = [];
 
-      for (let row = 0; row < rows; row++) {
-        const lineSymbols = [];
-        for (let col = 0; col < cols; col++) {
-          lineSymbols.push(currentGrid[col][row]);
-        }
+  for (let row = 0; row < rows; row++) {
+    const lineSymbols = [];
+    for (let col = 0; col < cols; col++) {
+      lineSymbols.push(currentGrid[col][row]);
+    }
 
-        let matchCount = 1;
-        for (let col = 1; col < cols; col++) {
-          if (lineSymbols[col] === lineSymbols[col - 1]) {
-            matchCount++;
-            if (matchCount >= 3) {
-              const sym = lineSymbols[col];
-              const occurrences = matchCount;
-              const payout = occurrences === 3
-                ? Math.floor(bet * payouts[sym])
-                : Math.floor(bet * payouts[sym] * 3);
-              totalWin += payout;
-              for (let i = col - matchCount + 1; i <= col; i++) {
-                winningIndices.push(row * cols + i);
-              }
-            }
-          } else {
-            matchCount = 1;
+    let matchCount = 1;
+    for (let col = 1; col < cols; col++) {
+      if (lineSymbols[col] === lineSymbols[col - 1]) {
+        matchCount++;
+      } else {
+        if (matchCount >= 3) {
+          const sym = lineSymbols[col - 1];
+          const basePayout = Math.floor(bet * payouts[sym]);
+          let payout = basePayout;
+
+          if (matchCount === 4) {
+            payout *= sym === "⭐" ? 3 : 2;
+          }
+
+          totalWin += payout;
+          for (let i = col - matchCount; i < col; i++) {
+            winningIndices.push(row * cols + i);
           }
         }
-      }
-
-      const won = Math.min(totalWin, pot);
-      balance += won;
-      pot -= won;
-
-      updateInfo();
-      localStorage.setItem("balance", balance);
-      localStorage.setItem("pot", pot);
-
-      const allCells = document.querySelectorAll(".cell");
-      winningIndices.forEach(i => {
-        allCells[i]?.classList.add("flash");
-      });
-
-      if (won > 0) {
-        message.textContent = `🎉 Вы выиграли ${won}р!`;
-      } else {
-        message.textContent = `😞 Увы, вы проиграли`;
+        matchCount = 1;
       }
     }
 
+    // Проверка на крайние совпадения (в конце строки)
+    if (matchCount >= 3) {
+      const sym = lineSymbols[cols - 1];
+      const basePayout = Math.floor(bet * payouts[sym]);
+      let payout = basePayout;
+
+      if (matchCount === 4) {
+        payout *= sym === "⭐" ? 3 : 2;
+      }
+
+      totalWin += payout;
+      for (let i = cols - matchCount; i < cols; i++) {
+        winningIndices.push(row * cols + i);
+      }
+    }
+  }
+
+  const won = Math.min(totalWin, pot);
+  balance += won;
+  pot -= won;
+
+  updateInfo();
+  localStorage.setItem("balance", balance);
+  localStorage.setItem("pot", pot);
+
+  const allCells = document.querySelectorAll(".cell");
+  winningIndices.forEach(i => {
+    allCells[i]?.classList.add("flash");
+  });
+
+  if (won > 0) {
+    message.textContent = `🎉 Вы выиграли ${won}р!`;
+  } else {
+    message.textContent = `😞 Увы, вы проиграли`;
+  }
+}
     // Инициализация
     for (let col = 0; col < cols; col++) {
       for (let i = 0; i < rows; i++) {
