@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🎰 Котелок 4x4</title>
+  <title>Котелок 4x4</title>
   <style>
     body {
       font-family: sans-serif;
       text-align: center;
-      margin-top: 20px;
+      margin-top: 30px;
       background-color: #272727;
       color: #ffffff;
     }
@@ -16,15 +16,15 @@
     .grid {
       display: grid;
       grid-template-columns: repeat(4, 70px);
-      grid-gap: 4px;
+      grid-gap: 2px;
       justify-content: center;
       margin: 20px auto;
     }
 
     .cell {
-      font-size: 2.5rem;
-      padding: 10px;
-      border: 2px solid #444;
+      font-size: 3.2rem;
+      padding: 15px;
+      border: 2px solid #333;
       border-radius: 10px;
       width: 70px;
       height: 70px;
@@ -35,80 +35,69 @@
       background-color: #585858;
     }
 
-    button {
-      font-size: 1rem;
-      padding: 8px 16px;
-      margin: 5px;
+    .info {
+      margin-top: 10px;
+      font-size: 1.2rem;
     }
 
-    .info {
-      margin: 10px;
+    .controls {
+      margin-top: 10px;
+    }
+
+    button {
       font-size: 1.1rem;
+      padding: 8px 16px;
+      margin: 6px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
   <h1>🎰 Котелок 4x4</h1>
 
-  <div class="info">
-    💰 Баланс: <span id="balance">10000</span>р |
-    🧮 Ставка: <span id="bet">5</span>р |
-    🏦 Котел: <span id="pool">0</span>р
+  <div class="info" id="game-info">
+    💰 Баланс: 10000р | 🧮 Ставка: 5р | 🏦 Котел: 0р
   </div>
 
-  <div>
+  <div class="controls">
     <button onclick="changeBet(-5)">-5</button>
     <button onclick="changeBet(5)">+5</button>
   </div>
 
   <div id="slot-grid" class="grid"></div>
 
-  <button onclick="spin()" id="spinBtn">Крутить</button>
+  <button onclick="spin()">Крутить</button>
   <button onclick="sendMessage()">Отправить</button>
 
   <audio id="beep-sound" src="beep.mp3" preload="auto"></audio>
 
   <script>
-    const symbols = ["🍒", "🍋", "🍊", "🍉", "🍇", "🔔", "💎", "⭐"];
-    const symbolPower = {
-      "🍒": 1, "🍋": 2, "🍊": 3, "🍉": 4,
-      "🍇": 5, "🔔": 6, "💎": 7, "⭐": 8
-    };
-
+    const symbols = ["🍒", "🍋", "🍉", "🍇", "🍊", "⭐", "🔔", "💎"];
     const grid = document.getElementById("slot-grid");
     const beep = document.getElementById("beep-sound");
-    const balanceSpan = document.getElementById("balance");
-    const poolSpan = document.getElementById("pool");
-    const betSpan = document.getElementById("bet");
-    const spinBtn = document.getElementById("spinBtn");
+    const info = document.getElementById("game-info");
 
     const rows = 4;
     const cols = 4;
-
     let currentGrid = Array.from({ length: cols }, () => []);
+
+    let balance = parseInt(localStorage.getItem("balance") || "10000");
+    let pot = parseInt(localStorage.getItem("pot") || "0");
+    let bet = parseInt(localStorage.getItem("bet") || "5");
+
     let isSpinning = false;
 
-    let balance = Number(localStorage.getItem("balance") || 10000);
-    let pool = Number(localStorage.getItem("pool") || 0);
-    let bet = 5;
-
-    updateDisplay();
-
-    function updateDisplay() {
-      balanceSpan.textContent = balance;
-      poolSpan.textContent = pool;
-      betSpan.textContent = bet;
+    function updateInfo() {
+      info.textContent = `💰 Баланс: ${balance}р | 🧮 Ставка: ${bet}р | 🏦 Котел: ${pot}р`;
     }
 
-    function changeBet(delta) {
-      bet = Math.min(50, Math.max(5, bet + delta));
-      updateDisplay();
-    }
-
-    function playBeep(volume = 1) {
-      beep.volume = volume;
-      beep.currentTime = 0;
-      beep.play().catch(() => {});
+    function changeBet(amount) {
+      let newBet = bet + amount;
+      if (newBet >= 5 && newBet <= 50) {
+        bet = newBet;
+        localStorage.setItem("bet", bet);
+        updateInfo();
+      }
     }
 
     function createGridDisplay() {
@@ -124,40 +113,40 @@
       }
     }
 
-    function generateInitialGrid() {
-      for (let col = 0; col < cols; col++) {
-        currentGrid[col] = [];
-        for (let row = 0; row < rows; row++) {
-          const symbol = symbols[Math.floor(Math.random() * symbols.length)];
-          currentGrid[col].push(symbol);
-        }
-      }
+    function playBeep(volume = 1) {
+      beep.volume = volume;
+      beep.currentTime = 0;
+      beep.play().catch(() => {});
     }
 
-    function spin() {
-      if (isSpinning) return;
-      if (balance < bet) {
-        alert("Недостаточно баланса!");
-        return;
-      }
-
+    async function spin() {
+      if (isSpinning || balance < bet) return;
       isSpinning = true;
-      balance -= bet;
-      pool += bet;
-      updateDisplay();
 
-      const totalSpinDuration = 3000;
+      balance -= bet;
+      pot += bet;
+      localStorage.setItem("balance", balance);
+      localStorage.setItem("pot", pot);
+      updateInfo();
+
+      setTimeout(() => playBeep(0.1), 1);
+
+      const totalSpinDuration = 4300;
       const fallSpeed = 90;
+      const staggerDelay = 300;
 
       const columnTasks = [];
 
       for (let col = 0; col < cols; col++) {
         columnTasks.push((async () => {
+          await new Promise(res => setTimeout(res, col * staggerDelay));
+
           const start = Date.now();
           while (Date.now() - start < totalSpinDuration) {
             for (let row = rows - 1; row > 0; row--) {
               currentGrid[col][row] = currentGrid[col][row - 1];
             }
+
             const newSymbol = symbols[Math.floor(Math.random() * symbols.length)];
             currentGrid[col][0] = newSymbol;
 
@@ -169,16 +158,9 @@
         })());
       }
 
-      Promise.all(columnTasks).then(() => {
-        createGridDisplay();
-        isSpinning = false;
-
-        // TODO: добавить подсчёт выигрыша
-
-        // сохранить
-        localStorage.setItem("balance", balance);
-        localStorage.setItem("pool", pool);
-      });
+      await Promise.all(columnTasks);
+      createGridDisplay();
+      isSpinning = false;
     }
 
     function sendMessage() {
@@ -195,7 +177,14 @@
       tg.close();
     }
 
-    generateInitialGrid();
+    // Первичная генерация
+    for (let col = 0; col < cols; col++) {
+      for (let i = 0; i < rows; i++) {
+        currentGrid[col].push(symbols[Math.floor(Math.random() * symbols.length)]);
+      }
+    }
+
+    updateInfo();
     createGridDisplay();
   </script>
 </body>
