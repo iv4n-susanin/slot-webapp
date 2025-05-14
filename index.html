@@ -180,24 +180,33 @@
 
       setTimeout(() => playBeep(0.1), 1);
 
-      const fallSpeed = 120;  // Скорость падения (чем больше, тем медленнее)
-      const totalSpinDuration = 7000;  // Общее время вращения (в миллисекундах)
-      const spins = Math.floor(totalSpinDuration / fallSpeed);  // Число шагов
+      const totalSpinDuration = 7000; // Время вращения 7 секунд
+      const fallSpeed = 100; // Скорость падения (меньше - быстрее)
+      const steps = Math.floor(totalSpinDuration / fallSpeed); // Количество шагов
 
       const columnTasks = [];
 
       for (let col = 0; col < cols; col++) {
         columnTasks.push((async () => {
-          await new Promise(res => setTimeout(res, col * 100));  // Легкое сдвижение начала
+          // Даем небольшую задержку для каждой колонки
+          await new Promise(res => setTimeout(res, col * 100));
 
-          for (let i = 0; i < spins; i++) {
+          const startTime = Date.now(); // Время старта вращения
+          let elapsed = 0;
+
+          // Запускаем вращение на 7 секунд
+          while (elapsed < totalSpinDuration) {
             for (let row = rows - 1; row > 0; row--) {
-              currentGrid[col][row] = currentGrid[col][row - 1];
+              currentGrid[col][row] = currentGrid[col][row - 1]; // Перемещаем символы вниз
             }
-            currentGrid[col][0] = symbols[Math.floor(Math.random() * symbols.length)];
+            currentGrid[col][0] = symbols[Math.floor(Math.random() * symbols.length)]; // Новый символ
 
-            createGridDisplay();  // Обновляем отображение
-            await new Promise(res => setTimeout(res, fallSpeed));  // Пауза между падениями
+            createGridDisplay();
+
+            // Рассчитываем, сколько времени прошло
+            elapsed = Date.now() - startTime;
+
+            await new Promise(res => setTimeout(res, fallSpeed)); // Задержка между падениями
           }
         })());
       }
@@ -241,7 +250,6 @@
           }
         }
 
-        // Проверка на крайние совпадения (в конце строки)
         if (matchCount >= 3) {
           const sym = lineSymbols[cols - 1];
           const basePayout = Math.floor(bet * payouts[sym]);
