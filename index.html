@@ -6,17 +6,21 @@
   <title>Котелок 4x4</title>
   <style>
     body {
-      font-family: sans-serif;
+      font-family: 'Segoe UI', sans-serif;
       text-align: center;
       margin-top: 20px;
-      background-color: #272727;
+      background-color: #1e1e1e;
       color: #ffffff;
+    }
+
+    h1 {
+      margin-bottom: 10px;
     }
 
     .grid {
       display: grid;
       grid-template-columns: repeat(4, 70px);
-      grid-gap: 2px;
+      grid-gap: 5px;
       justify-content: center;
       margin: 20px auto;
     }
@@ -24,8 +28,7 @@
     .cell {
       font-size: 2.8rem;
       padding: 10px;
-      border: 2px solid #333;
-      border-radius: 10px;
+      border-radius: 14px;
       width: 70px;
       height: 70px;
       box-sizing: border-box;
@@ -33,6 +36,7 @@
       align-items: center;
       justify-content: center;
       background-color: #585858;
+      transition: background 0.3s;
     }
 
     .flash {
@@ -42,26 +46,6 @@
     @keyframes flashAnim {
       0% { background-color: #ff3b3b; }
       100% { background-color: #585858; }
-    }
-
-    button {
-      font-size: 1.2rem;
-      padding: 10px 20px;
-      margin: 5px;
-      border: none;
-      border-radius: 12px;
-      background-color: #444;
-      color: white;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    button:hover {
-      background-color: #666;
-    }
-
-    button:active {
-      background-color: #888;
     }
 
     .info {
@@ -74,6 +58,35 @@
       font-size: 1.2rem;
       font-weight: bold;
     }
+
+    .button-group {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 10px 0;
+    }
+
+    button {
+      font-size: 1rem;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 20px;
+      background: linear-gradient(to right, #4e54c8, #8f94fb);
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+    }
+
+    button:active {
+      transform: scale(0.98);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
   </style>
 </head>
 <body>
@@ -85,12 +98,14 @@
 
   <div id="slot-grid" class="grid"></div>
 
-  <div>
+  <div class="button-group">
     <button onclick="adjustBet(-5)">-5</button>
     <button onclick="adjustBet(5)">+5</button>
   </div>
 
-  <button onclick="spin()">Крутить</button>
+  <div class="button-group">
+    <button onclick="spin()">Крутить</button>
+  </div>
 
   <div id="message"></div>
 
@@ -247,7 +262,7 @@
       }
     }
 
-    // Начальная генерация
+    // Инициализация
     for (let col = 0; col < cols; col++) {
       for (let i = 0; i < rows; i++) {
         currentGrid[col].push(symbols[Math.floor(Math.random() * symbols.length)]);
