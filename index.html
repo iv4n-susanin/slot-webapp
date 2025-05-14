@@ -16,7 +16,7 @@
     .grid {
       display: grid;
       grid-template-columns: repeat(4, 70px);
-      grid-gap: 2px;
+      grid-gap: 4px;
       justify-content: center;
       margin: 20px auto;
     }
@@ -82,10 +82,11 @@
     const betSpan = document.getElementById("bet");
     const spinBtn = document.getElementById("spinBtn");
 
-    let rows = 4, cols = 4;
+    const rows = 4;
+    const cols = 4;
+
     let currentGrid = Array.from({ length: cols }, () => []);
     let isSpinning = false;
-    let infiniteSpin = false;
 
     let balance = Number(localStorage.getItem("balance") || 10000);
     let pool = Number(localStorage.getItem("pool") || 0);
@@ -122,3 +123,80 @@
         }
       }
     }
+
+    function generateInitialGrid() {
+      for (let col = 0; col < cols; col++) {
+        currentGrid[col] = [];
+        for (let row = 0; row < rows; row++) {
+          const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+          currentGrid[col].push(symbol);
+        }
+      }
+    }
+
+    function spin() {
+      if (isSpinning) return;
+      if (balance < bet) {
+        alert("Недостаточно баланса!");
+        return;
+      }
+
+      isSpinning = true;
+      balance -= bet;
+      pool += bet;
+      updateDisplay();
+
+      const totalSpinDuration = 3000;
+      const fallSpeed = 90;
+
+      const columnTasks = [];
+
+      for (let col = 0; col < cols; col++) {
+        columnTasks.push((async () => {
+          const start = Date.now();
+          while (Date.now() - start < totalSpinDuration) {
+            for (let row = rows - 1; row > 0; row--) {
+              currentGrid[col][row] = currentGrid[col][row - 1];
+            }
+            const newSymbol = symbols[Math.floor(Math.random() * symbols.length)];
+            currentGrid[col][0] = newSymbol;
+
+            createGridDisplay();
+            await new Promise(res => setTimeout(res, fallSpeed));
+          }
+
+          currentGrid[col] = currentGrid[col].slice(0, rows);
+        })());
+      }
+
+      Promise.all(columnTasks).then(() => {
+        createGridDisplay();
+        isSpinning = false;
+
+        // TODO: добавить подсчёт выигрыша
+
+        // сохранить
+        localStorage.setItem("balance", balance);
+        localStorage.setItem("pool", pool);
+      });
+    }
+
+    function sendMessage() {
+      const tg = window.Telegram?.WebApp;
+      if (!tg) return;
+      const flatGrid = [];
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          flatGrid.push(currentGrid[col][row] || "❓");
+        }
+      }
+      const result = flatGrid.join("");
+      tg.sendData("🎰 Результат 4x4: " + result);
+      tg.close();
+    }
+
+    generateInitialGrid();
+    createGridDisplay();
+  </script>
+</body>
+</html>
