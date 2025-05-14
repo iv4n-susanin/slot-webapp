@@ -35,11 +35,6 @@
       background-color: #585858;
     }
 
-    .info {
-      margin-top: 10px;
-      font-size: 1.2rem;
-    }
-
     .controls {
       margin-top: 10px;
     }
@@ -50,29 +45,43 @@
       margin: 6px;
       cursor: pointer;
     }
+
+    .info {
+      margin-top: 20px;
+      font-size: 1.2rem;
+    }
   </style>
 </head>
 <body>
   <h1>🎰 Котелок 4x4</h1>
 
-  <div class="info" id="game-info">
-    💰 Баланс: 10000р | 🧮 Ставка: 5р | 🏦 Котел: 0р
-  </div>
+  <div id="slot-grid" class="grid"></div>
 
   <div class="controls">
     <button onclick="changeBet(-5)">-5</button>
+    <button onclick="spin()">Крутить</button>
     <button onclick="changeBet(5)">+5</button>
   </div>
 
-  <div id="slot-grid" class="grid"></div>
-
-  <button onclick="spin()">Крутить</button>
-  <button onclick="sendMessage()">Отправить</button>
+  <div class="info" id="game-info">
+    💰 Баланс: 10000р | 🧮 Ставка: 5р | 🏦 Котел: 0р
+  </div>
 
   <audio id="beep-sound" src="beep.mp3" preload="auto"></audio>
 
   <script>
     const symbols = ["🍒", "🍋", "🍉", "🍇", "🍊", "⭐", "🔔", "💎"];
+    const payouts = {
+      "🍒": 1,
+      "🍋": 1.2,
+      "🍉": 1.5,
+      "🍇": 2,
+      "🍊": 2.5,
+      "⭐": 3,
+      "🔔": 4,
+      "💎": 6
+    };
+
     const grid = document.getElementById("slot-grid");
     const beep = document.getElementById("beep-sound");
     const info = document.getElementById("game-info");
@@ -119,6 +128,42 @@
       beep.play().catch(() => {});
     }
 
+    function checkWins() {
+      let totalWin = 0;
+
+      // Проверка по строкам
+      for (let row = 0; row < rows; row++) {
+        let rowSymbols = [];
+        for (let col = 0; col < cols; col++) {
+          rowSymbols.push(currentGrid[col][row]);
+        }
+
+        const counts = {};
+        for (const sym of rowSymbols) {
+          counts[sym] = (counts[sym] || 0) + 1;
+        }
+
+        for (const [symbol, count] of Object.entries(counts)) {
+          if (count === 3) {
+            const win = Math.floor(bet * payouts[symbol]);
+            totalWin += win;
+          } else if (count === 4) {
+            const jackpot = Math.floor(bet * payouts[symbol] * 3);
+            totalWin += jackpot;
+          }
+        }
+      }
+
+      // Платим из котла
+      const paid = Math.min(pot, totalWin);
+      balance += paid;
+      pot -= paid;
+
+      localStorage.setItem("balance", balance);
+      localStorage.setItem("pot", pot);
+      updateInfo();
+    }
+
     async function spin() {
       if (isSpinning || balance < bet) return;
       isSpinning = true;
@@ -140,16 +185,14 @@
       for (let col = 0; col < cols; col++) {
         columnTasks.push((async () => {
           await new Promise(res => setTimeout(res, col * staggerDelay));
-
           const start = Date.now();
+
           while (Date.now() - start < totalSpinDuration) {
             for (let row = rows - 1; row > 0; row--) {
               currentGrid[col][row] = currentGrid[col][row - 1];
             }
-
             const newSymbol = symbols[Math.floor(Math.random() * symbols.length)];
             currentGrid[col][0] = newSymbol;
-
             createGridDisplay();
             await new Promise(res => setTimeout(res, fallSpeed));
           }
@@ -160,21 +203,8 @@
 
       await Promise.all(columnTasks);
       createGridDisplay();
+      checkWins();
       isSpinning = false;
-    }
-
-    function sendMessage() {
-      const tg = window.Telegram?.WebApp;
-      if (!tg) return;
-      const flatGrid = [];
-      for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
-          flatGrid.push(currentGrid[col][row] || "❓");
-        }
-      }
-      const result = flatGrid.join("");
-      tg.sendData("🎰 Результат 4x4: " + result);
-      tg.close();
     }
 
     // Первичная генерация
