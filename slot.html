@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Слот 4x4 WebApp</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 30px;
+      background-color: #272727; /* ← вот это и есть фон страницы */
+      color: #000000; /* цвет текста, чтобы контраст был виден */
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 70px);
+      grid-gap: 2px;
+      justify-content: center;
+      margin: 20px auto;
+    }
+
+    .cell {
+      font-size: 3.2rem;
+      padding: 15px;
+      border: 2px solid #333;
+      border-radius: 10px;
+      width: 70px;
+      height: 70px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #585858;
+    }
+
+    button {
+      font-size: 1.2rem;
+      padding: 10px 20px;
+      margin: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎰 Слот 4x4</h1>
+
+  <div id="slot-grid" class="grid"></div>
+
+  <button onclick="spin()">Крутить</button>
+  <button onclick="sendMessage()">Отправить</button>
+
+  <audio id="beep-sound" src="beep.mp3" preload="auto"></audio>
+
+  <script>
+    const symbols = ["🍒", "🍋", "🍉", "🍇", "🍊", "⭐", "🔔", "💎"];
+    const grid = document.getElementById("slot-grid");
+    const beep = document.getElementById("beep-sound");
+    const rows = 4;
+    const cols = 4;
+    let currentGrid = Array.from({ length: cols }, () => []);
+    let isSpinning = false;
+
+    function createGridDisplay() {
+      grid.innerHTML = "";
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const cell = document.createElement("div");
+          cell.classList.add("cell");
+          const symbol = currentGrid[col][row] || "❓";
+          cell.textContent = symbol;
+          grid.appendChild(cell);
+        }
+      }
+    }
+
+    function playBeep(volume = 1) {
+      beep.volume = volume;
+      beep.currentTime = 0;
+      beep.play().catch(() => {});
+    }
+
+    async function spin() {
+      if (isSpinning) return;
+      isSpinning = true;
+
+      // Звук с задержкой
+      setTimeout(() => playBeep(0.1), 1);
+
+      const totalSpinDuration = 4300; // 4.3 сек
+      const fallSpeed = 90;
+      const staggerDelay = 300;
+
+      const columnTasks = [];
+
+      for (let col = 0; col < cols; col++) {
+        columnTasks.push((async () => {
+          await new Promise(res => setTimeout(res, col * staggerDelay));
+
+          const start = Date.now();
+          while (Date.now() - start < totalSpinDuration) {
+            // Shift symbols down
+            for (let row = rows - 1; row > 0; row--) {
+              currentGrid[col][row] = currentGrid[col][row - 1];
+            }
+
+            // Insert new symbol at top
+            const newSymbol = symbols[Math.floor(Math.random() * symbols.length)];
+            currentGrid[col][0] = newSymbol;
+
+            createGridDisplay();
+            await new Promise(res => setTimeout(res, fallSpeed));
+          }
+
+          // Ensure final 4 symbols are saved
+          currentGrid[col] = currentGrid[col].slice(0, rows);
+        })());
+      }
+
+      await Promise.all(columnTasks);
+      createGridDisplay();
+      isSpinning = false;
+    }
+
+    function sendMessage() {
+      const tg = window.Telegram?.WebApp;
+      if (!tg) return;
+      const flatGrid = [];
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          flatGrid.push(currentGrid[col][row] || "❓");
+        }
+      }
+      const result = flatGrid.join("");
+      tg.sendData("🎰 Результат 4x4: " + result);
+      tg.close();
+    }
+
+    // Начальная генерация
+    for (let col = 0; col < cols; col++) {
+      for (let i = 0; i < rows; i++) {
+        currentGrid[col].push(symbols[Math.floor(Math.random() * symbols.length)]);
+      }
+    }
+
+    createGridDisplay();
+  </script>
+</body>
+</html>
+
+
