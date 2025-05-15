@@ -76,7 +76,6 @@
   <button onclick="changeBet(-5)">Ставка -5</button>
   <button onclick="changeBet(5)">Ставка +5</button>
   <button onclick="spin()">Крутить</button>
-  <button onclick="sendMessage()">Отправить</button>
 
   <div id="info"></div>
   <div id="message"></div>
@@ -182,8 +181,10 @@
         }
       }
 
+      let actualWin = 0;
+
       if (totalWin > 0) {
-        const actualWin = Math.min(totalWin, pot);
+        actualWin = Math.min(totalWin, pot);
         balance += actualWin;
         pot -= actualWin;
         message.textContent = `🎉 Вы выиграли ${actualWin}р!`;
@@ -195,6 +196,27 @@
       localStorage.setItem("balance", balance);
       localStorage.setItem("pot", pot);
       updateInfo();
+
+      // Автоматическая отправка в Telegram
+      const tg = window.Telegram?.WebApp;
+      if (tg) {
+        const flatGrid = [];
+        for (let row = 0; row < rows; row++) {
+          for (let col = 0; col < cols; col++) {
+            flatGrid.push(currentGrid[col][row] || "❓");
+          }
+        }
+
+        const data = {
+          result: flatGrid.join(""),
+          bet: bet,
+          win: actualWin,
+          balance: balance,
+          pot: pot
+        };
+
+        tg.sendData(JSON.stringify(data));
+      }
     }
 
     async function spin() {
@@ -240,22 +262,6 @@
       createGridDisplay();
       checkWins();
       isSpinning = false;
-    }
-
-    function sendMessage() {
-      const tg = window.Telegram?.WebApp;
-      if (!tg) return;
-
-      const flatGrid = [];
-      for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
-          flatGrid.push(currentGrid[col][row] || "❓");
-        }
-      }
-
-      const result = flatGrid.join("");
-      tg.sendData("🎰 Результат 4x4: " + result);
-      tg.close();
     }
 
     // начальная генерация
