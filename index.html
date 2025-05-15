@@ -1,263 +1,104 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Котелок 4x4</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      margin-top: 30px;
-      background-color: #272727;
-      color: #ffffff;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(4, 70px);
-      grid-gap: 2px;
-      justify-content: center;
-      margin: 20px auto;
-    }
-
-    .cell {
-      font-size: 3.2rem;
-      padding: 15px;
-      border: 2px solid #333;
-      border-radius: 10px;
-      width: 70px;
-      height: 70px;
-      box-sizing: border-box;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: #585858;
-    }
-
-    .cell.flash {
-      animation: flash-win 0.7s infinite alternate;
-    }
-
-    @keyframes flash-win {
-      from { background-color: #ff4444; }
-      to { background-color: #585858; }
-    }
-
-    #info {
-      margin-top: 20px;
-      font-size: 1.2rem;
-    }
-
-    #message {
-      margin-top: 10px;
-      font-size: 1.2rem;
-    }
-
-    button {
-      font-size: 1.1rem;
-      padding: 10px 15px;
-      margin: 5px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Слот 4x4 WebApp</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            margin-top: 30px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 60px);
+            grid-gap: 10px;
+            justify-content: center;
+            margin: 20px auto;
+        }
+        .cell {
+            font-size: 2rem;
+            padding: 15px;
+            border: 2px solid #333;
+            border-radius: 10px;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f2f2f2;
+            transition: background-color 0.2s;
+        }
+        .spinning {
+            animation: blink 0.2s steps(1) infinite;
+        }
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+        button {
+            font-size: 1.2rem;
+            padding: 10px 20px;
+            margin: 10px;
+        }
+    </style>
 </head>
 <body>
-  <h1>🎰 Котелок 4x4</h1>
-  <div id="slot-grid" class="grid"></div>
+    <h1>🎰 Слот 4x4</h1>
 
-  <button onclick="changeBet(-5)">-5</button>
-  <button onclick="changeBet(5)">+5</button>
-  <button onclick="spin()">Крутить</button>
+    <div id="slot-grid" class="grid"></div>
 
-  <div id="info">💰 Баланс: 10000р | 🧮 Ставка: 5р | 🏦 Котел: 0р</div>
-  <div id="message"></div>
+    <button onclick="spin()">Крутить</button>
+    <button onclick="sendMessage()">Отправить</button>
 
-  <audio id="beep-sound" src="beep.mp3" preload="auto"></audio>
+    <script>
+        const symbols = ["🍒", "🍋", "🍉", "🍇", "🍊", "⭐", "🔔", "💎"];
+        const grid = document.getElementById("slot-grid");
 
-  <script>
-    const symbols = ["🍒", "🍋", "🍉", "🍇", "🍊", "⭐"];
-    const payouts = {
-      "🍒": 1,
-      "🍋": 1.2,
-      "🍉": 1.5,
-      "🍇": 2,
-      "🍊": 2.5,
-      "⭐": 5
-    };
-
-    const rows = 4, cols = 4;
-    let currentGrid = Array.from({ length: cols }, () => []);
-    let isSpinning = false;
-
-    let balance = parseInt(localStorage.getItem("balance")) || 10000;
-    let pot = parseInt(localStorage.getItem("pot")) || 0;
-    let bet = 5;
-
-    const grid = document.getElementById("slot-grid");
-    const beep = document.getElementById("beep-sound");
-    const info = document.getElementById("info");
-    const message = document.getElementById("message");
-
-    function updateInfo() {
-      info.textContent = `💰 Баланс: ${balance}р | 🧮 Ставка: ${bet}р | 🏦 Котел: ${pot}р`;
-    }
-
-    function createGridDisplay() {
-      grid.innerHTML = "";
-      for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
-          const cell = document.createElement("div");
-          cell.classList.add("cell");
-          const symbol = currentGrid[col][row] || "❓";
-          cell.textContent = symbol;
-          grid.appendChild(cell);
-        }
-      }
-    }
-
-    function changeBet(delta) {
-      const newBet = bet + delta;
-      if (newBet >= 5 && newBet <= 50) {
-        bet = newBet;
-        updateInfo();
-      }
-    }
-
-    function clearFlash() {
-      document.querySelectorAll(".cell").forEach(cell => {
-        cell.classList.remove("flash");
-      });
-    }
-
-    function flashWinningCells(cells) {
-      const allCells = document.querySelectorAll(".cell");
-      cells.forEach(({ row, col }) => {
-        const index = row * cols + col;
-        const cell = allCells[index];
-        cell.classList.add("flash");
-      });
-    }
-
-    function checkWins() {
-      let totalWin = 0;
-      const winningCells = [];
-
-      for (let row = 0; row < rows; row++) {
-        const rowSymbols = [];
-        for (let col = 0; col < cols; col++) {
-          rowSymbols.push(currentGrid[col][row]);
-        }
-
-        const counts = {};
-        for (const sym of rowSymbols) {
-          counts[sym] = (counts[sym] || 0) + 1;
-        }
-
-        for (const [symbol, count] of Object.entries(counts)) {
-          if (count >= 3) {
-            let payout = 0;
-            if (count === 3) payout = Math.floor(bet * payouts[symbol]);
-            else if (count === 4) payout = Math.floor(bet * payouts[symbol] * 3);
-            totalWin += payout;
-
-            for (let col = 0; col < cols; col++) {
-              if (currentGrid[col][row] === symbol) {
-                winningCells.push({ row, col });
-              }
+        function createGrid() {
+            grid.innerHTML = "";
+            for (let i = 0; i < 16; i++) {
+                const cell = document.createElement("div");
+                cell.classList.add("cell");
+                cell.textContent = "❓";
+                grid.appendChild(cell);
             }
-          }
         }
-      }
 
-      const paid = Math.min(pot, totalWin);
-      balance += paid;
-      pot -= paid;
+        function spin() {
+            const cells = document.querySelectorAll(".cell");
+            cells.forEach(cell => cell.classList.add("spinning"));
 
-      localStorage.setItem("balance", balance);
-      localStorage.setItem("pot", pot);
-      updateInfo();
+            let interval = setInterval(() => {
+                cells.forEach(cell => {
+                    const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+                    cell.textContent = symbol;
+                });
+            }, 100);
 
-      if (paid > 0) {
-        message.textContent = `🎉 Вы выиграли ${paid}р!`;
-      } else {
-        message.textContent = `😞 Увы, вы проиграли`;
-      }
+            setTimeout(() => {
+                clearInterval(interval);
+                cells.forEach(cell => {
+                    const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+                    cell.textContent = symbol;
+                    cell.classList.remove("spinning");
+                });
+            }, 2000);
+        }
 
-      if (winningCells.length > 0) {
-        setTimeout(() => flashWinningCells(winningCells), 200);
-      }
-    }
+        function sendMessage() {
+            const tg = window.Telegram.WebApp;
+            const result = Array.from(document.querySelectorAll(".cell"))
+                .map(cell => cell.textContent)
+                .join("");
+            tg.sendData("🎰 Результат 4x4: " + result);
+            tg.close();
+        }
 
-    async function spin() {
-      if (isSpinning || balance < bet) return;
-
-      isSpinning = true;
-      message.textContent = "";
-      clearFlash();
-
-      balance -= bet;
-      pot += bet;
-      updateInfo();
-
-      beep.volume = 0.1;
-      beep.currentTime = 0;
-      beep.play().catch(() => {});
-
-      const totalSymbols = 100; // сколько фруктов прокручивается в каждом столбце
-      const minSpeed = 20;     // минимальная скорость (быстрая прокрутка)
-      const maxSpeed = 50;    // максимальная (медленная в начале и конце)
-      const staggerDelay = 200;
-
-      const columnTasks = [];
-
-      for (let col = 0; col < cols; col++) {
-        columnTasks.push((async () => {
-          await new Promise(res => setTimeout(res, col * staggerDelay));
-
-          for (let i = 0; i < totalSymbols; i++) {
-            // определяем текущую скорость в зависимости от стадии
-            let t = i / totalSymbols;
-            let speed = lerp(maxSpeed, minSpeed, easeInOut(t));
-            
-            for (let row = rows - 1; row > 0; row--) {
-              currentGrid[col][row] = currentGrid[col][row - 1];
-            }
-            const newSymbol = symbols[Math.floor(Math.random() * symbols.length)];
-            currentGrid[col][0] = newSymbol;
-            createGridDisplay();
-            await new Promise(res => setTimeout(res, speed));
-          }
-
-          currentGrid[col] = currentGrid[col].slice(0, rows);
-        })());
-      }
-
-      await Promise.all(columnTasks);
-      createGridDisplay();
-      checkWins();
-      isSpinning = false;
-    }
-
-    // Ускорение/замедление через ease-in-out
-    function easeInOut(t) {
-      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-    }
-
-    // Интерполяция между двумя значениями
-    function lerp(a, b, t) {
-      return a + (b - a) * t;
-    }
-
-    // начальная генерация
-    for (let col = 0; col < cols; col++) {
-      for (let row = 0; row < rows; row++) {
-        currentGrid[col].push(symbols[Math.floor(Math.random() * symbols.length)]);
-      }
-    }
-
-    createGridDisplay();
-    updateInfo();
-  </script>
+        createGrid(); // Создаём поле при загрузке
+    </script>
 </body>
 </html>
 
