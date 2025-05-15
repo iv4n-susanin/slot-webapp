@@ -203,27 +203,29 @@
       beep.currentTime = 0;
       beep.play().catch(() => {});
 
-      let spinning = true;
-      beep.addEventListener("ended", () => {
-        spinning = false;
-      }, { once: true });
-
-      const fallSpeed = 20;
+      const totalSymbols = 16; // сколько фруктов прокручивается в каждом столбце
+      const minSpeed = 20;     // минимальная скорость (быстрая прокрутка)
+      const maxSpeed = 120;    // максимальная (медленная в начале и конце)
       const staggerDelay = 200;
+
       const columnTasks = [];
 
       for (let col = 0; col < cols; col++) {
         columnTasks.push((async () => {
           await new Promise(res => setTimeout(res, col * staggerDelay));
 
-          while (spinning) {
+          for (let i = 0; i < totalSymbols; i++) {
+            // определяем текущую скорость в зависимости от стадии
+            let t = i / totalSymbols;
+            let speed = lerp(maxSpeed, minSpeed, easeInOut(t));
+            
             for (let row = rows - 1; row > 0; row--) {
               currentGrid[col][row] = currentGrid[col][row - 1];
             }
             const newSymbol = symbols[Math.floor(Math.random() * symbols.length)];
             currentGrid[col][0] = newSymbol;
             createGridDisplay();
-            await new Promise(res => setTimeout(res, fallSpeed));
+            await new Promise(res => setTimeout(res, speed));
           }
 
           currentGrid[col] = currentGrid[col].slice(0, rows);
@@ -234,6 +236,16 @@
       createGridDisplay();
       checkWins();
       isSpinning = false;
+    }
+
+    // Ускорение/замедление через ease-in-out
+    function easeInOut(t) {
+      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    }
+
+    // Интерполяция между двумя значениями
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
     }
 
     // начальная генерация
