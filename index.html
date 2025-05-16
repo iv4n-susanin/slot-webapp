@@ -69,7 +69,7 @@
   </style>
 </head>
 <body>
-  <h1>🎰 Слот 4x4</h1>
+  <h1>🌀 Слот 4x4</h1>
 
   <div id="slot-grid" class="grid"></div>
 
@@ -94,7 +94,7 @@
     let currentGrid = Array.from({ length: cols }, () => []);
     let isSpinning = false;
 
-    let balance = parseInt(localStorage.getItem("balance")) || 10000;
+    let balance = 10000;
     let pot = 0;
     let bet = 5;
 
@@ -110,7 +110,7 @@
     };
 
     function updateInfo() {
-      info.textContent = `💰 Баланс: ${balance}р | �� Ставка: ${bet}р | 🏦 Котел: ${pot}р`;
+      info.textContent = `💰 Баланс: ${balance}р | 🧯 Ставка: ${bet}р | 🏬 Котел: ${pot}р`;
     }
 
     function createGridDisplay() {
@@ -186,10 +186,9 @@
         message.textContent = `🎉 Вы выиграли ${totalWin}р!`;
         flashCells(winCells);
       } else {
-        message.textContent = `😞 Увы, вы проиграли`;
+        message.textContent = `☹️ Увы, вы проиграли`;
       }
 
-      localStorage.setItem("balance", balance);
       updateInfo();
 
       const tg = window.Telegram?.WebApp;
@@ -202,10 +201,9 @@
         }
 
         const data = {
-          result: flatGrid.join(""),
           bet: bet,
           win: totalWin,
-          balance: balance
+          result: flatGrid.join("")
         };
 
         tg.sendData(JSON.stringify(data));
@@ -264,7 +262,6 @@
 
     createGridDisplay();
     updateInfo();
-    message.textContent = "👋 Добро пожаловать!";
 
     const tg = window.Telegram?.WebApp;
     if (tg) {
