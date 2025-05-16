@@ -194,7 +194,6 @@
       localStorage.setItem("balance", balance);
       updateInfo();
 
-      // отправка в Telegram
       const tg = window.Telegram?.WebApp;
       if (tg) {
         const flatGrid = [];
@@ -205,7 +204,6 @@
         }
 
         const data = {
-          result: flatGrid.join(""),
           bet: bet,
           win: actualWin,
           balance: balance
@@ -214,17 +212,13 @@
         tg.sendData(JSON.stringify(data));
       }
 
-      getPotFromServer(); // Обновим котел
+      getPotFromBot();
     }
 
-    async function getPotFromServer() {
-      try {
-        const res = await fetch("http://localhost:8080/pot");
-        const data = await res.json();
-        pot = data.pot;
-        updateInfo();
-      } catch (e) {
-        console.error("Ошибка получения котла:", e);
+    function getPotFromBot() {
+      const tg = window.Telegram?.WebApp;
+      if (tg) {
+        tg.sendData(JSON.stringify({ type: "get_pot" }));
       }
     }
 
@@ -272,7 +266,6 @@
       isSpinning = false;
     }
 
-    // начальная генерация
     for (let col = 0; col < cols; col++) {
       for (let i = 0; i < rows; i++) {
         currentGrid[col].push(symbols[Math.floor(Math.random() * symbols.length)]);
@@ -280,8 +273,9 @@
     }
 
     createGridDisplay();
-    getPotFromServer();
+    getPotFromBot();
     message.textContent = "👋 Добро пожаловать!";
   </script>
 </body>
 </html>
+
