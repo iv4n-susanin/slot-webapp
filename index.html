@@ -84,6 +84,20 @@
 
   <script>
     const symbols = ["🍒", "🍋", "🍉", "🍇", "🍊", "⭐", "🔔", "💎"];
+    const grid = document.getElementById("slot-grid");
+    const beep = document.getElementById("beep-sound");
+    const info = document.getElementById("info");
+    const message = document.getElementById("message");
+    const rows = 4;
+    const cols = 4;
+
+    let currentGrid = Array.from({ length: cols }, () => []);
+    let isSpinning = false;
+
+    let balance = parseInt(localStorage.getItem("balance")) || 10000;
+    let pot = 0;
+    let bet = 5;
+
     const payouts = {
       "🍒": 1,
       "🍋": 1.2,
@@ -95,32 +109,8 @@
       "💎": 6
     };
 
-    const grid = document.getElementById("slot-grid");
-    const beep = document.getElementById("beep-sound");
-    const info = document.getElementById("info");
-    const message = document.getElementById("message");
-
-    const rows = 4;
-    const cols = 4;
-    let currentGrid = Array.from({ length: cols }, () => []);
-    let isSpinning = false;
-
-    let balance = parseInt(localStorage.getItem("balance")) || 10000;
-    let pot = 0;
-    let bet = 5;
-
-    async function getPotFromServer() {
-      try {
-        const res = await fetch("http://localhost:8080/pot");
-        const data = await res.json();
-        pot = data.pot;
-      } catch (err) {
-        console.error("Ошибка получения котла:", err);
-      }
-    }
-
     function updateInfo() {
-      info.textContent = `💰 Баланс: ${balance}р | 🧮 Ставка: ${bet}р | 🏦 Котёл: ${pot}р`;
+      info.textContent = `💰 Баланс: ${balance}р | 🧮 Ставка: ${bet}р | 🏦 Котел: ${pot}р`;
     }
 
     function createGridDisplay() {
@@ -191,12 +181,10 @@
         }
       }
 
-      let actualWin = 0;
+      let actualWin = totalWin;
 
       if (totalWin > 0) {
-        actualWin = Math.min(totalWin, pot);
         balance += actualWin;
-        pot -= actualWin;
         message.textContent = `🎉 Вы выиграли ${actualWin}р!`;
         flashCells(winCells);
       } else {
@@ -206,13 +194,37 @@
       localStorage.setItem("balance", balance);
       updateInfo();
 
+      // отправка в Telegram
       const tg = window.Telegram?.WebApp;
       if (tg) {
+        const flatGrid = [];
+        for (let row = 0; row < rows; row++) {
+          for (let col = 0; col < cols; col++) {
+            flatGrid.push(currentGrid[col][row] || "❓");
+          }
+        }
+
         const data = {
+          result: flatGrid.join(""),
           bet: bet,
-          win: actualWin
+          win: actualWin,
+          balance: balance
         };
+
         tg.sendData(JSON.stringify(data));
+      }
+
+      getPotFromServer(); // Обновим котел
+    }
+
+    async function getPotFromServer() {
+      try {
+        const res = await fetch("http://localhost:8080/pot");
+        const data = await res.json();
+        pot = data.pot;
+        updateInfo();
+      } catch (e) {
+        console.error("Ошибка получения котла:", e);
       }
     }
 
@@ -223,12 +235,11 @@
       message.textContent = "";
 
       balance -= bet;
-      pot += bet;
       updateInfo();
 
       setTimeout(() => playBeep(0.6), 0);
 
-      const totalSpinDuration = 4000;
+      const totalSpinDuration = 5500;
       const fallSpeed = 100;
       const staggerDelay = 10;
 
@@ -258,8 +269,6 @@
       await Promise.all(columnTasks);
       createGridDisplay();
       checkWins();
-      await getPotFromServer();
-      updateInfo();
       isSpinning = false;
     }
 
@@ -270,12 +279,9 @@
       }
     }
 
-    (async () => {
-      await getPotFromServer();
-      createGridDisplay();
-      updateInfo();
-      message.textContent = "👋 Добро пожаловать!";
-    })();
+    createGridDisplay();
+    getPotFromServer();
+    message.textContent = "👋 Добро пожаловать!";
   </script>
 </body>
 </html>
