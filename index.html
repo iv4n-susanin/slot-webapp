@@ -12,7 +12,6 @@
       background-color: #272727;
       color: #fff;
     }
-
     .grid {
       display: grid;
       grid-template-columns: repeat(4, 70px);
@@ -23,7 +22,6 @@
       padding: 5px;
       border-radius: 10px;
     }
-
     .cell {
       font-size: 3.2rem;
       padding: 15px;
@@ -37,7 +35,6 @@
       justify-content: center;
       background-color: #f2f2f2;
     }
-
     button {
       font-size: 1.1rem;
       padding: 10px 15px;
@@ -48,20 +45,16 @@
       border-radius: 6px;
       cursor: pointer;
     }
-
     button:hover {
       background-color: #666;
     }
-
     #info, #message {
       margin-top: 15px;
       font-size: 1.1rem;
     }
-
     .cell.flash {
       animation: flash 0.5s alternate infinite;
     }
-
     @keyframes flash {
       from { background-color: #f00; }
       to { background-color: #fff; }
@@ -70,18 +63,13 @@
 </head>
 <body>
   <h1>🎰 Слот 4x4</h1>
-
   <div id="slot-grid" class="grid"></div>
-
   <button onclick="changeBet(-5)">Ставка -5</button>
   <button onclick="changeBet(5)">Ставка +5</button>
   <button onclick="spin()">Крутить</button>
-
   <div id="info"></div>
   <div id="message"></div>
-
   <audio id="beep-sound" src="beep.mp3" preload="auto"></audio>
-
   <script>
     const symbols = ["🍒", "🍋", "🍉", "🍇", "🍊", "⭐", "🔔", "💎"];
     const grid = document.getElementById("slot-grid");
@@ -90,29 +78,18 @@
     const message = document.getElementById("message");
     const rows = 4;
     const cols = 4;
-
     let currentGrid = Array.from({ length: cols }, () => []);
     let isSpinning = false;
-
     let balance = parseInt(localStorage.getItem("balance")) || 10000;
     let pot = 0;
     let bet = 5;
-
     const payouts = {
-      "🍒": 1,
-      "🍋": 1.2,
-      "🍉": 1.5,
-      "🍇": 2,
-      "🍊": 2.5,
-      "⭐": 5,
-      "🔔": 3,
-      "💎": 6
+      "🍒": 1, "🍋": 1.2, "🍉": 1.5, "🍇": 2,
+      "🍊": 2.5, "⭐": 5, "🔔": 3, "💎": 6
     };
-
     function updateInfo() {
       info.textContent = `💰 Баланс: ${balance}р | 🧮 Ставка: ${bet}р | 🏦 Котел: ${pot}р`;
     }
-
     function createGridDisplay() {
       grid.innerHTML = "";
       for (let row = 0; row < rows; row++) {
@@ -125,13 +102,11 @@
         }
       }
     }
-
     function playBeep(volume = 1) {
       beep.volume = volume;
       beep.currentTime = 0;
       beep.play().catch(() => {});
     }
-
     function changeBet(delta) {
       const newBet = bet + delta;
       if (newBet >= 5 && newBet <= 100) {
@@ -139,11 +114,9 @@
         updateInfo();
       }
     }
-
     function clearFlash() {
       document.querySelectorAll(".cell").forEach(cell => cell.classList.remove("flash"));
     }
-
     function flashCells(cells) {
       const allCells = document.querySelectorAll(".cell");
       cells.forEach(({ row, col }) => {
@@ -151,27 +124,22 @@
         allCells[idx]?.classList.add("flash");
       });
     }
-
     function checkWins() {
       let totalWin = 0;
       const winCells = [];
-
       for (let row = 0; row < rows; row++) {
         const symbolsRow = [];
         for (let col = 0; col < cols; col++) {
           symbolsRow.push(currentGrid[col][row]);
         }
-
         const counts = {};
         for (const sym of symbolsRow) {
           counts[sym] = (counts[sym] || 0) + 1;
         }
-
         for (const [symbol, count] of Object.entries(counts)) {
           if (count >= 3) {
             const payout = Math.floor(bet * payouts[symbol] * (count === 4 ? 3 : 1));
             totalWin += payout;
-
             for (let col = 0; col < cols; col++) {
               if (currentGrid[col][row] === symbol) {
                 winCells.push({ row, col });
@@ -180,101 +148,72 @@
           }
         }
       }
-
-      let actualWin = totalWin;
-
       if (totalWin > 0) {
-        balance += actualWin;
-        message.textContent = `🎉 Вы выиграли ${actualWin}р!`;
+        balance += totalWin;
+        message.textContent = `🎉 Вы выиграли ${totalWin}р!`;
         flashCells(winCells);
       } else {
         message.textContent = `😞 Увы, вы проиграли`;
       }
-
       localStorage.setItem("balance", balance);
       updateInfo();
-
       const tg = window.Telegram?.WebApp;
       if (tg) {
-        const flatGrid = [];
-        for (let row = 0; row < rows; row++) {
-          for (let col = 0; col < cols; col++) {
-            flatGrid.push(currentGrid[col][row] || "❓");
-          }
-        }
-
-        const data = {
-          bet: bet,
-          win: actualWin,
-          balance: balance
-        };
-
-        tg.sendData(JSON.stringify(data));
-      }
-
-      getPotFromBot();
-    }
-
-    function getPotFromBot() {
-      const tg = window.Telegram?.WebApp;
-      if (tg) {
-        tg.sendData(JSON.stringify({ type: "get_pot" }));
+        tg.sendData(JSON.stringify({ bet, win: totalWin, balance }));
       }
     }
-
     async function spin() {
       if (isSpinning || balance < bet) return;
       isSpinning = true;
       clearFlash();
       message.textContent = "";
-
       balance -= bet;
       updateInfo();
-
       setTimeout(() => playBeep(0.6), 0);
-
       const totalSpinDuration = 5500;
       const fallSpeed = 100;
       const staggerDelay = 10;
-
       const columnTasks = [];
-
       for (let col = 0; col < cols; col++) {
         columnTasks.push((async () => {
           await new Promise(res => setTimeout(res, col * staggerDelay));
-
           const start = Date.now();
           while (Date.now() - start < totalSpinDuration) {
             for (let row = rows - 1; row > 0; row--) {
               currentGrid[col][row] = currentGrid[col][row - 1];
             }
-
             const newSymbol = symbols[Math.floor(Math.random() * symbols.length)];
             currentGrid[col][0] = newSymbol;
-
             createGridDisplay();
             await new Promise(res => setTimeout(res, fallSpeed));
           }
-
           currentGrid[col] = currentGrid[col].slice(0, rows);
         })());
       }
-
       await Promise.all(columnTasks);
       createGridDisplay();
       checkWins();
       isSpinning = false;
     }
-
     for (let col = 0; col < cols; col++) {
       for (let i = 0; i < rows; i++) {
         currentGrid[col].push(symbols[Math.floor(Math.random() * symbols.length)]);
       }
     }
-
     createGridDisplay();
-    getPotFromBot();
+    updateInfo();
     message.textContent = "👋 Добро пожаловать!";
+    Telegram.WebApp.onEvent("message", msg => {
+      try {
+        const data = JSON.parse(msg.data || msg);
+        if (data.pot) {
+          pot = data.pot;
+          updateInfo();
+        }
+      } catch (e) {
+        console.error("Ошибка обработки сообщения от бота:", e);
+      }
+    });
   </script>
 </body>
 </html>
