@@ -3,110 +3,283 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Слот-машина</title>
+  <title>Слот 4x4 WebApp</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background-color: #111;
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 30px;
+      background-color: #272727;
       color: #fff;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 70px);
+      grid-gap: 2px;
+      justify-content: center;
+      margin: 20px auto;
+      background-color: #444;
+      padding: 5px;
+      border-radius: 10px;
+    }
+
+    .cell {
+      font-size: 3.2rem;
+      padding: 15px;
+      border: 2px solid #333;
+      border-radius: 10px;
+      width: 70px;
+      height: 70px;
+      box-sizing: border-box;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
-      margin: 0;
+      background-color: #f2f2f2;
     }
-    .slot {
-      font-size: 5rem;
-    }
-    .info {
-      margin: 20px;
-    }
-    .spin-button {
-      padding: 10px 20px;
-      font-size: 1.2rem;
-      background-color: #28a745;
-      color: white;
+
+    button {
+      font-size: 1.1rem;
+      padding: 10px 15px;
+      margin: 5px;
+      background-color: #444;
+      color: #fff;
       border: none;
-      border-radius: 5px;
+      border-radius: 6px;
       cursor: pointer;
     }
-    .spin-button:hover {
-      background-color: #218838;
+
+    button:hover {
+      background-color: #666;
+    }
+
+    #info, #message {
+      margin-top: 15px;
+      font-size: 1.1rem;
+    }
+
+    .cell.flash {
+      animation: flash 0.5s alternate infinite;
+    }
+
+    @keyframes flash {
+      from { background-color: #f00; }
+      to { background-color: #fff; }
     }
   </style>
 </head>
 <body>
-  <div class="info">
-    <div>Ваш баланс: <span id="balance">0</span> р</div>
-    <div>Общий котёл: <span id="pot">0</span> р</div>
-  </div>
-  <div class="slot" id="slot">🎰🎰🎰</div>
-  <button class="spin-button" onclick="spin()">Крутить</button>
+  <h1>🎰 Слот 4x4</h1>
+
+  <div id="slot-grid" class="grid"></div>
+
+  <button onclick="changeBet(-5)">Ставка -5</button>
+  <button onclick="changeBet(5)">Ставка +5</button>
+  <button onclick="spin()">Крутить</button>
+
+  <div id="info"></div>
+  <div id="message"></div>
+
+  <audio id="beep-sound" src="beep.mp3" preload="auto"></audio>
 
   <script>
-    let balance = 100;
+    const symbols = ["🍒", "🍋", "🍉", "🍇", "🍊", "⭐", "🔔", "💎"];
+    const grid = document.getElementById("slot-grid");
+    const beep = document.getElementById("beep-sound");
+    const info = document.getElementById("info");
+    const message = document.getElementById("message");
+    const rows = 4;
+    const cols = 4;
+
+    let currentGrid = Array.from({ length: cols }, () => []);
+    let isSpinning = false;
+
+    let balance = parseInt(localStorage.getItem("balance")) || 10000;
     let pot = 0;
+    let bet = 5;
 
-    function getRandomSymbol() {
-      const symbols = ["🍒", "🍋", "🔔", "⭐", "💎"];
-      return symbols[Math.floor(Math.random() * symbols.length)];
-    }
-
-    function spin() {
-      const bet = 10;
-      if (balance < bet) {
-        alert("Недостаточно средств!");
-        return;
-      }
-
-      const s1 = getRandomSymbol();
-      const s2 = getRandomSymbol();
-      const s3 = getRandomSymbol();
-      document.getElementById("slot").textContent = `${s1}${s2}${s3}`;
-
-      let win = 0;
-      if (s1 === s2 && s2 === s3) {
-        win = bet * 5;
-      } else if (s1 === s2 || s2 === s3 || s1 === s3) {
-        win = bet * 2;
-      }
-
-      balance = balance - bet + win;
-
-      Telegram.WebApp.sendData(JSON.stringify({
-        bet: bet,
-        win: win,
-        balance: balance
-      }));
-
-      // обновим локально, сервер потом пришлёт окончательные
-      updateInfo();
-    }
+    const payouts = {
+      "🍒": 1,
+      "🍋": 1.2,
+      "🍉": 1.5,
+      "🍇": 2,
+      "🍊": 2.5,
+      "⭐": 5,
+      "🔔": 3,
+      "💎": 6
+    };
 
     function updateInfo() {
-      document.getElementById("balance").textContent = balance;
-      document.getElementById("pot").textContent = pot;
+      info.textContent = `💰 Баланс: ${balance}р | 🧮 Ставка: ${bet}р | 🏦 Котел: ${pot}р`;
     }
 
-    Telegram.WebApp.ready();
+    function createGridDisplay() {
+      grid.innerHTML = "";
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const cell = document.createElement("div");
+          cell.classList.add("cell");
+          const symbol = currentGrid[col][row] || "❓";
+          cell.textContent = symbol;
+          grid.appendChild(cell);
+        }
+      }
+    }
 
-    Telegram.WebApp.onEvent("message", (event) => {
+    function playBeep(volume = 1) {
+      beep.volume = volume;
+      beep.currentTime = 0;
+      beep.play().catch(() => {});
+    }
+
+    function changeBet(delta) {
+      const newBet = bet + delta;
+      if (newBet >= 5 && newBet <= 100) {
+        bet = newBet;
+        updateInfo();
+      }
+    }
+
+    function clearFlash() {
+      document.querySelectorAll(".cell").forEach(cell => cell.classList.remove("flash"));
+    }
+
+    function flashCells(cells) {
+      const allCells = document.querySelectorAll(".cell");
+      cells.forEach(({ row, col }) => {
+        const idx = row * cols + col;
+        allCells[idx]?.classList.add("flash");
+      });
+    }
+
+    function checkWins() {
+      let totalWin = 0;
+      const winCells = [];
+
+      for (let row = 0; row < rows; row++) {
+        const symbolsRow = [];
+        for (let col = 0; col < cols; col++) {
+          symbolsRow.push(currentGrid[col][row]);
+        }
+
+        const counts = {};
+        for (const sym of symbolsRow) {
+          counts[sym] = (counts[sym] || 0) + 1;
+        }
+
+        for (const [symbol, count] of Object.entries(counts)) {
+          if (count >= 3) {
+            const payout = Math.floor(bet * payouts[symbol] * (count === 4 ? 3 : 1));
+            totalWin += payout;
+
+            for (let col = 0; col < cols; col++) {
+              if (currentGrid[col][row] === symbol) {
+                winCells.push({ row, col });
+              }
+            }
+          }
+        }
+      }
+
+      let actualWin = totalWin;
+
+      if (totalWin > 0) {
+        balance += actualWin;
+        message.textContent = `🎉 Вы выиграли ${actualWin}р!`;
+        flashCells(winCells);
+      } else {
+        message.textContent = `😞 Увы, вы проиграли`;
+      }
+
+      localStorage.setItem("balance", balance);
+      updateInfo();
+
+      const tg = window.Telegram?.WebApp;
+      if (tg) {
+        const flatGrid = [];
+        for (let row = 0; row < rows; row++) {
+          for (let col = 0; col < cols; col++) {
+            flatGrid.push(currentGrid[col][row] || "❓");
+          }
+        }
+
+        const data = {
+          result: flatGrid.join(""),
+          bet: bet,
+          win: actualWin,
+          balance: balance
+        };
+
+        tg.sendData(JSON.stringify(data));
+      }
+
+      getPotFromServer();
+    }
+
+    async function getPotFromServer() {
       try {
-        const data = JSON.parse(event.data);
-        if (data.pot !== undefined) {
-          pot = data.pot;
-        }
-        if (data.balance !== undefined) {
-          balance = data.balance;
-        }
+        const res = await fetch("http://localhost:8080/pot");
+        const data = await res.json();
+        pot = data.pot;
         updateInfo();
       } catch (e) {
-        console.error("Ошибка разбора данных:", e);
+        console.error("Ошибка получения котла:", e);
       }
-    });
+    }
+
+    async function spin() {
+      if (isSpinning || balance < bet) return;
+      isSpinning = true;
+      clearFlash();
+      message.textContent = "";
+
+      balance -= bet;
+      updateInfo();
+
+      setTimeout(() => playBeep(0.6), 0);
+
+      const totalSpinDuration = 5500;
+      const fallSpeed = 100;
+      const staggerDelay = 10;
+
+      const columnTasks = [];
+
+      for (let col = 0; col < cols; col++) {
+        columnTasks.push((async () => {
+          await new Promise(res => setTimeout(res, col * staggerDelay));
+
+          const start = Date.now();
+          while (Date.now() - start < totalSpinDuration) {
+            for (let row = rows - 1; row > 0; row--) {
+              currentGrid[col][row] = currentGrid[col][row - 1];
+            }
+
+            const newSymbol = symbols[Math.floor(Math.random() * symbols.length)];
+            currentGrid[col][0] = newSymbol;
+
+            createGridDisplay();
+            await new Promise(res => setTimeout(res, fallSpeed));
+          }
+
+          currentGrid[col] = currentGrid[col].slice(0, rows);
+        })());
+      }
+
+      await Promise.all(columnTasks);
+      createGridDisplay();
+      checkWins();
+      isSpinning = false;
+    }
+
+    for (let col = 0; col < cols; col++) {
+      for (let i = 0; i < rows; i++) {
+        currentGrid[col].push(symbols[Math.floor(Math.random() * symbols.length)]);
+      }
+    }
+
+    createGridDisplay();
+    getPotFromServer();
+    message.textContent = "👋 Добро пожаловать!";
   </script>
 </body>
 </html>
-
-
