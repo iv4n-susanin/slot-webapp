@@ -73,11 +73,14 @@
       }
 
       balance = balance - bet + win;
+
       Telegram.WebApp.sendData(JSON.stringify({
         bet: bet,
         win: win,
         balance: balance
       }));
+
+      // обновим локально, сервер потом пришлёт окончательные
       updateInfo();
     }
 
@@ -85,6 +88,8 @@
       document.getElementById("balance").textContent = balance;
       document.getElementById("pot").textContent = pot;
     }
+
+    Telegram.WebApp.ready();
 
     Telegram.WebApp.onEvent("message", (event) => {
       try {
@@ -100,9 +105,8 @@
         console.error("Ошибка разбора данных:", e);
       }
     });
-
-    Telegram.WebApp.ready();
   </script>
 </body>
 </html>
+
 
