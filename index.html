@@ -95,7 +95,7 @@
     let isSpinning = false;
 
     let balance = parseInt(localStorage.getItem("balance")) || 10000;
-    let pot = parseInt(localStorage.getItem("pot")) || 0;
+    let pot = 0;
     let bet = 5;
 
     const payouts = {
@@ -184,9 +184,8 @@
       let actualWin = 0;
 
       if (totalWin > 0) {
-        actualWin = Math.min(totalWin, pot);
+        actualWin = totalWin; // Теперь pot считается на сервере
         balance += actualWin;
-        pot -= actualWin;
         message.textContent = `🎉 Вы выиграли ${actualWin}р!`;
         flashCells(winCells);
       } else {
@@ -194,10 +193,9 @@
       }
 
       localStorage.setItem("balance", balance);
-      localStorage.setItem("pot", pot);
       updateInfo();
 
-      // Автоматическая отправка в Telegram
+      // Telegram WebApp sendData
       const tg = window.Telegram?.WebApp;
       if (tg) {
         const flatGrid = [];
@@ -211,8 +209,7 @@
           result: flatGrid.join(""),
           bet: bet,
           win: actualWin,
-          balance: balance,
-          pot: pot
+          balance: balance
         };
 
         tg.sendData(JSON.stringify(data));
@@ -226,7 +223,6 @@
       message.textContent = "";
 
       balance -= bet;
-      pot += bet;
       updateInfo();
 
       setTimeout(() => playBeep(0.6), 0);
@@ -264,7 +260,20 @@
       isSpinning = false;
     }
 
-    // начальная генерация
+    async function fetchPot() {
+      try {
+        const response = await fetch("http://localhost:8080");
+        const text = await response.text();
+        const match = text.match(/\d+/);
+        if (match) {
+          pot = parseInt(match[0]);
+          updateInfo();
+        }
+      } catch (e) {
+        console.error("Не удалось получить котёл:", e);
+      }
+    }
+
     for (let col = 0; col < cols; col++) {
       for (let i = 0; i < rows; i++) {
         currentGrid[col].push(symbols[Math.floor(Math.random() * symbols.length)]);
@@ -272,6 +281,7 @@
     }
 
     createGridDisplay();
+    fetchPot();
     updateInfo();
     message.textContent = "👋 Добро пожаловать!";
   </script>
