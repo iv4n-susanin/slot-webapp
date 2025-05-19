@@ -1,18 +1,61 @@
-
-<html>
+<!DOCTYPE html>
+<html lang="ru">
 <head>
-<meta charset="utf-8">
-<style>
-body{margin:0;padding:0}h4{color:#fff;text-align:center;font-size:20px;font-family:'Roboto Condensed',sans-serif;font-weight:700;top:46%;position:absolute;width:100%}#page-preloader{position:fixed;left:0;top:0;right:0;bottom:0;background:#000;z-index:100500}#page-preloader .spinner{height:100px;position:absolute;top:400px;width:100%;background:url(//cloud-games.top/load.svg) 50% 50% no-repeat}.modal-content{position:fixed;text-align:center;margin:15% auto;width:100%;-webkit-animation-name:animatetop;-webkit-animation-duration:.5s;animation-name:animatetop;animation-duration:.5s}.modal-content img{background:linear-gradient(227deg,#e42540,rgba(187,24,16,.65));padding:8px;width:70%;border-radius:10px}@-webkit-keyframes animatetop{from{margin-top:-300px;opacity:0}to{top:0;opacity:1}}@keyframes animatetop{from{margin-top:-300px;opacity:0}to{top:0;opacity:1}}.close{color:#e2e2e2;float:right;font-size:20px;font-weight:700;background:#bd2a3f;position:absolute;width:35px;height:35px;border-radius:30px;font-family:"Arial Black",Gadget,sans-serif;margin-left:69%;margin-top:-15px;line-height:30px}.close:focus,.close:hover{color:#fff;text-decoration:none;cursor:pointer}</style></head><body><div id="page-preloader"><span class="spinner"></span><h4>ЗАГРУЗКА ИГРЫ</h4></div>﻿﻿﻿﻿<iframe style="overflow: hidden;" scrolling="no" frameborder="0" width="100%" height="100%" src="https://igame-igr.flameful.games/residentv2?tkn=demo_0554a7d7-f778-476b-8d70-bdc6c87f89f4_1_f70a89bade5adfd8b483474ba7747b63&lang=ru"></iframe><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-<script>$(window).on('load', function (){
-var $preloader = $('#page-preloader'),
-$spinner   = $preloader.find('.spinner');
-$spinner.fadeOut();
-$preloader.delay(900).fadeOut('slow');
-});(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-N3FQ4N6');</script>
+  <meta charset="UTF-8">
+  <title>Товары с WB с наценкой</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    .product { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; display: flex; align-items: center; }
+    .product img { width: 100px; margin-right: 20px; }
+    .product-title { font-size: 18px; font-weight: bold; }
+    .product-price { color: green; font-size: 16px; }
+  </style>
+</head>
+<body>
+
+<h1>WB товары (с наценкой)</h1>
+<input type="text" id="search" placeholder="Введите название товара..." style="width: 300px; padding: 5px;">
+<div id="results"></div>
+
+<script>
+async function fetchProducts(query) {
+  const res = await fetch(`https://search.wb.ru/exactmatch/ru/common/v4/search?query=${encodeURIComponent(query)}&resultset=catalog`);
+  const data = await res.json();
+  return data.data?.products || [];
+}
+
+function renderProducts(products) {
+  const results = document.getElementById('results');
+  results.innerHTML = '';
+
+  products.forEach(prod => {
+    const priceBase = prod.salePriceU || prod.priceU;
+    const price = (priceBase / 100 + 50).toFixed(0); // Наценка +50₽
+    const img = `https://basket-${prod.id % 10}.wb.ru/vol${Math.floor(prod.id / 1e5)}/part${Math.floor(prod.id / 1e3)}/${prod.id}/images/c516x688/1.jpg`;
+
+    const div = document.createElement('div');
+    div.className = 'product';
+    div.innerHTML = `
+      <img src="${img}" alt="${prod.name}">
+      <div>
+        <div class="product-title">${prod.name}</div>
+        <div class="product-price">${price} ₽</div>
+      </div>
+    `;
+    results.appendChild(div);
+  });
+}
+
+document.getElementById('search').addEventListener('input', async (e) => {
+  const query = e.target.value.trim();
+  if (query.length > 2) {
+    const products = await fetchProducts(query);
+    renderProducts(products.slice(0, 20)); // первые 20
+  } else {
+    document.getElementById('results').innerHTML = '';
+  }
+});
+</script>
+
 </body>
 </html>
