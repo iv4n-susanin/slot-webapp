@@ -2,57 +2,58 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Товары с WB с наценкой</title>
+  <title>AliExpress Витрина с Наценкой</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    .product { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; display: flex; align-items: center; }
-    .product img { width: 100px; margin-right: 20px; }
-    .product-title { font-size: 18px; font-weight: bold; }
-    .product-price { color: green; font-size: 16px; }
+    body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+    .product { border: 1px solid #ddd; padding: 10px; margin: 10px 0; display: flex; align-items: center; gap: 15px; }
+    .product img { width: 100px; }
+    .product-title { font-weight: bold; }
+    .product-price { color: green; font-size: 18px; }
   </style>
 </head>
 <body>
 
-<h1>WB товары (с наценкой)</h1>
-<input type="text" id="search" placeholder="Введите название товара..." style="width: 300px; padding: 5px;">
+<h2>Поиск по AliExpress (с наценкой)</h2>
+<input type="text" id="search" placeholder="Например: наушники" style="width: 300px; padding: 6px;">
 <div id="results"></div>
 
 <script>
-async function fetchProducts(query) {
-  const res = await fetch(`https://search.wb.ru/exactmatch/ru/common/v4/search?query=${encodeURIComponent(query)}&resultset=catalog`);
-  const data = await res.json();
-  return data.data?.products || [];
-}
-
-function renderProducts(products) {
-  const results = document.getElementById('results');
-  results.innerHTML = '';
-
-  products.forEach(prod => {
-    const priceBase = prod.salePriceU || prod.priceU;
-    const price = (priceBase / 100 + 50).toFixed(0); // Наценка +50₽
-    const img = `https://basket-${prod.id % 10}.wb.ru/vol${Math.floor(prod.id / 1e5)}/part${Math.floor(prod.id / 1e3)}/${prod.id}/images/c516x688/1.jpg`;
-
-    const div = document.createElement('div');
-    div.className = 'product';
-    div.innerHTML = `
-      <img src="${img}" alt="${prod.name}">
-      <div>
-        <div class="product-title">${prod.name}</div>
-        <div class="product-price">${price} ₽</div>
-      </div>
-    `;
-    results.appendChild(div);
-  });
-}
-
 document.getElementById('search').addEventListener('input', async (e) => {
   const query = e.target.value.trim();
-  if (query.length > 2) {
-    const products = await fetchProducts(query);
-    renderProducts(products.slice(0, 20)); // первые 20
-  } else {
+  if (query.length < 3) {
     document.getElementById('results').innerHTML = '';
+    return;
+  }
+
+  const url = `https://api-shein.aliexpressapi.repl.co/search?query=${encodeURIComponent(query)}&limit=20`;
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+
+    const container = document.getElementById('results');
+    container.innerHTML = '';
+
+    data.result.forEach(item => {
+      const price = parseFloat(item.price.replace(/[^\d.]/g, ''));
+      const markup = 100;
+      const finalPrice = Math.round(price + markup);
+
+      const div = document.createElement('div');
+      div.className = 'product';
+      div.innerHTML = `
+        <img src="${item.image}" alt="${item.title}">
+        <div>
+          <div class="product-title">${item.title}</div>
+          <div class="product-price">${finalPrice} ₽</div>
+          <a href="${item.link}" target="_blank">Открыть на Ali</a>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+
+  } catch (err) {
+    console.error('Ошибка загрузки:', err);
   }
 });
 </script>
