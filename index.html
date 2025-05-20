@@ -50,10 +50,19 @@ async function loadProducts() {
     const data = await res.json();
     const products = data?.data?.products || [];
     if (products.length === 0 && currentPage === 1) {
-      productList.innerHTML = '<p style="text-align:center;width:100%">Ничего не найдено 😕</p>';
+      // Fallback — пробуем конкретный товар
+      const fallback = await fetch('https://card.wb.ru/cards/detail?appType=1&curr=rub&nm=156059826');
+      const detail = await fallback.json();
+      const card = detail?.data?.products?.[0];
+      if (card) {
+        renderCard(card);
+      } else {
+        productList.innerHTML = '<p style="text-align:center;width:100%">Ничего не найдено 😕</p>';
+      }
+    } else {
+      products.forEach(p => renderCard(p));
+      currentPage++;
     }
-    products.forEach(p => renderCard(p));
-    currentPage++;
   } catch (e) {
     console.error('Ошибка загрузки:', e);
   }
