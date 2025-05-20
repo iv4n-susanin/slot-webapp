@@ -51,7 +51,7 @@ async function loadProducts() {
     const products = data?.data?.products || [];
     if (products.length === 0 && currentPage === 1) {
       // Fallback — пробуем конкретный товар
-      const fallback = await fetch('https://card.wb.ru/cards/detail?appType=1&curr=rub&nm=156059826');
+      const fallback = await fetch('https://card.wb.ru/cards/detail?appType=1&curr=rub&nm=194367011');
       const detail = await fallback.json();
       const card = detail?.data?.products?.[0];
       if (card) {
