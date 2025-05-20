@@ -1,48 +1,90 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Оформление заказа</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <title>Каталог Wildberries</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    input, select, button {
-      width: 100%; margin-bottom: 15px; padding: 10px; font-size: 16px;
-    }
+    body { font-family: sans-serif; margin: 0; padding: 0; background: #fafafa; }
+    .search-bar { padding: 10px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 10; }
+    input[type="text"] { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; }
+    .products { display: flex; flex-wrap: wrap; justify-content: center; padding: 10px; }
+    .card { width: 160px; background: #fff; margin: 10px; padding: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 8px; display: flex; flex-direction: column; align-items: center; }
+    .card img { width: 100%; border-radius: 6px; object-fit: cover; }
+    .card .title { font-size: 14px; font-weight: 600; margin-top: 10px; text-align: center; }
+    .card .price { color: #0a0; font-weight: bold; margin: 6px 0; }
+    .card button { padding: 6px 10px; background: #5e00c7; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    .loading { text-align: center; padding: 20px; color: #666; font-size: 14px; }
   </style>
 </head>
 <body>
-  <h2>Оформить заказ</h2>
+  <div class="search-bar">
+    <input type="text" id="query" placeholder="Введите товар (например: кроссовки)" onkeypress="if(event.key==='Enter'){search()}" />
+  </div>
 
-  <input id="name" placeholder="ФИО" required />
-  <input id="address" placeholder="Адрес доставки / ПВЗ" required />
+  <div id="product-list" class="products"></div>
+  <div id="loading" class="loading" style="display:none;">Загрузка...</div>
 
-  <select id="product">
-    <option value="Плюшевый мишка">Плюшевый мишка</option>
-    <option value="Робот на пульте">Робот на пульте</option>
-    <option value="Кукла с одеждой">Кукла с одеждой</option>
-  </select>
+<script>
+const productList = document.getElementById('product-list');
+const queryInput = document.getElementById('query');
+const loadingText = document.getElementById('loading');
+let currentPage = 1;
+let loading = false;
+let currentQuery = '';
 
-  <button onclick="submitData()">Оформить заказ</button>
+function search() {
+  productList.innerHTML = '';
+  currentPage = 1;
+  currentQuery = queryInput.value.trim();
+  loadProducts();
+}
 
-  <script>
-    Telegram.WebApp.expand();
-
-    function submitData() {
-      const data = {
-        name: document.getElementById("name").value,
-        address: document.getElementById("address").value,
-        product: document.getElementById("product").value
-      };
-
-      Telegram.WebApp.sendData(JSON.stringify(data));
-      Telegram.WebApp.close();
+async function loadProducts() {
+  if (!currentQuery || loading) return;
+  loading = true;
+  loadingText.style.display = 'block';
+  try {
+    const url = `https://search.wb.ru/exactmatch/ru/common/v4/search?query=${encodeURIComponent(currentQuery)}&page=${currentPage}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const products = data?.data?.products || [];
+    if (products.length === 0 && currentPage === 1) {
+      productList.innerHTML = '<p style="text-align:center;width:100%">Ничего не найдено 😕</p>';
     }
-  </script>
-</body>
-</html>
+    products.forEach(p => renderCard(p));
+    currentPage++;
+  } catch (e) {
+    console.error('Ошибка загрузки:', e);
+  }
+  loading = false;
+  loadingText.style.display = 'none';
+}
 
+function renderCard(product) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  const img = `https://images.wbstatic.net/c516x688/new/${product.id}.jpg`;
+  card.innerHTML = `
+    <img src="${img}" alt="${product.name}" />
+    <div class="title">${product.name}</div>
+    <div class="price">${Math.round(product.salePriceU/100)} ₽</div>
+    <button onclick="alert('Оформление временно отключено')">Оформить</button>
+  `;
+  productList.appendChild(card);
+}
+
+window.addEventListener('scroll', () => {
+  if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 200) {
+    loadProducts();
+  }
+});
+
+// Автозапуск по умолчанию
+window.addEventListener('DOMContentLoaded', () => {
+  queryInput.value = 'кроссовки';
+  search();
+});
 </script>
-
 </body>
 </html>
