@@ -45,7 +45,7 @@ async function loadProducts() {
   loading = true;
   loadingText.style.display = 'block';
   try {
-    const url = `https://search.wb.ru/exactmatch/ru/common/v4/search?query=${encodeURIComponent(currentQuery)}&page=${currentPage}`;
+    const url = `https://search.wb.ru/exactmatch/ru/common/v4/search?appType=1&curr=rub&dest=-1257786&query=${encodeURIComponent(currentQuery)}&page=${currentPage}`;
     const res = await fetch(url);
     const data = await res.json();
     const products = data?.data?.products || [];
