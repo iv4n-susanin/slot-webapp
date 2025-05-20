@@ -45,20 +45,12 @@ async function loadProducts() {
   loading = true;
   loadingText.style.display = 'block';
   try {
-    const url = `https://search.wb.ru/exactmatch/ru/common/v4/search?appType=1&curr=rub&dest=-1257786&query=${encodeURIComponent(currentQuery)}&page=${currentPage}`;
+    const url = `https://catalog.wb.ru/catalog/all/v4/search?appType=1&curr=rub&dest=-1257786&query=${encodeURIComponent(currentQuery)}&page=${currentPage}`;
     const res = await fetch(url);
     const data = await res.json();
     const products = data?.data?.products || [];
     if (products.length === 0 && currentPage === 1) {
-      // Fallback — пробуем конкретный товар
-      const fallback = await fetch('https://card.wb.ru/cards/detail?appType=1&curr=rub&nm=194367011');
-      const detail = await fallback.json();
-      const card = detail?.data?.products?.[0];
-      if (card) {
-        renderCard(card);
-      } else {
-        productList.innerHTML = '<p style="text-align:center;width:100%">Ничего не найдено 😕</p>';
-      }
+      productList.innerHTML = '<p style="text-align:center;width:100%">Ничего не найдено 😕</p>';
     } else {
       products.forEach(p => renderCard(p));
       currentPage++;
