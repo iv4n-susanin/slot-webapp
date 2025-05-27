@@ -2,90 +2,62 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Каталог Wildberries</title>
+  <title>Админ-панель</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: sans-serif; margin: 0; padding: 0; background: #fafafa; }
-    .search-bar { padding: 10px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 10; }
-    input[type="text"] { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; }
-    .products { display: flex; flex-wrap: wrap; justify-content: center; padding: 10px; }
-    .card { width: 160px; background: #fff; margin: 10px; padding: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 8px; display: flex; flex-direction: column; align-items: center; }
-    .card img { width: 100%; border-radius: 6px; object-fit: cover; }
-    .card .title { font-size: 14px; font-weight: 600; margin-top: 10px; text-align: center; }
-    .card .price { color: #0a0; font-weight: bold; margin: 6px 0; }
-    .card button { padding: 6px 10px; background: #5e00c7; color: white; border: none; border-radius: 4px; cursor: pointer; }
-    .loading { text-align: center; padding: 20px; color: #666; font-size: 14px; }
+    body {
+      font-family: sans-serif;
+      background: #f2f2f2;
+      padding: 20px;
+    }
+    h2 {
+      text-align: center;
+    }
+    input, textarea, button {
+      width: 100%;
+      margin-bottom: 15px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      background-color: #0088cc;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #006ea8;
+    }
   </style>
 </head>
 <body>
-  <div class="search-bar">
-    <input type="text" id="query" placeholder="Введите товар (например: кроссовки)" onkeypress="if(event.key==='Enter'){search()}" />
-  </div>
+  <h2>Добавление товара</h2>
+  <form id="product-form">
+    <input type="text" id="name" placeholder="Название товара" required />
+    <textarea id="desc" placeholder="Описание" required></textarea>
+    <input type="number" id="price" placeholder="Цена" required />
+    <input type="number" id="stock" placeholder="Количество" required />
+    <button type="submit">📤 Отправить в Telegram</button>
+  </form>
 
-  <div id="product-list" class="products"></div>
-  <div id="loading" class="loading" style="display:none;">Загрузка...</div>
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand(); // Разворачивает WebApp
 
-<script>
-const productList = document.getElementById('product-list');
-const queryInput = document.getElementById('query');
-const loadingText = document.getElementById('loading');
-let currentPage = 1;
-let loading = false;
-let currentQuery = '';
+    document.getElementById("product-form").addEventListener("submit", function (e) {
+      e.preventDefault();
 
-function search() {
-  productList.innerHTML = '';
-  currentPage = 1;
-  currentQuery = queryInput.value.trim();
-  loadProducts();
-}
+      const data = {
+        name: document.getElementById("name").value,
+        desc: document.getElementById("desc").value,
+        price: document.getElementById("price").value,
+        stock: document.getElementById("stock").value
+      };
 
-async function loadProducts() {
-  if (!currentQuery || loading) return;
-  loading = true;
-  loadingText.style.display = 'block';
-  try {
-    const url = `https://search.wb.ru/exactmatch/ru/common/v4/search?appType=1&curr=rub&dest=-1257786&query=${encodeURIComponent(currentQuery)}&page=${currentPage}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    const products = data?.data?.products || [];
-    if (products.length === 0 && currentPage === 1) {
-      productList.innerHTML = '<p style="text-align:center;width:100%">Ничего не найдено 😕</p>';
-    } else {
-      products.forEach(p => renderCard(p));
-      currentPage++;
-    }
-  } catch (e) {
-    console.error('Ошибка загрузки:', e);
-  }
-  loading = false;
-  loadingText.style.display = 'none';
-}
-
-function renderCard(product) {
-  const card = document.createElement('div');
-  card.className = 'card';
-  const img = `https://images.wbstatic.net/c516x688/new/${product.id}.jpg`;
-  card.innerHTML = `
-    <img src="${img}" alt="${product.name}" />
-    <div class="title">${product.name}</div>
-    <div class="price">${Math.round(product.salePriceU/100)} ₽</div>
-    <button onclick="alert('Оформление временно отключено')">Оформить</button>
-  `;
-  productList.appendChild(card);
-}
-
-window.addEventListener('scroll', () => {
-  if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 200) {
-    loadProducts();
-  }
-});
-
-// Автозапуск по умолчанию
-window.addEventListener('DOMContentLoaded', () => {
-  queryInput.value = 'кроссовки';
-  search();
-});
-</script>
+      tg.sendData(JSON.stringify(data));
+    });
+  </script>
 </body>
 </html>
