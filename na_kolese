@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🛍️ Витрина товаров</title>
+  <style>
+    :root {
+      --фон: #161600;
+      --цвет-заголовка: #a5a570;
+      --фон-поиска: #e2e2d0;
+      --текст-поиска: #262618;
+      --фон-карты: #9c9c79;
+      --текст-описания: #e2e2d0;
+      --цвет-цены: #ad0000;
+      --текст-остатка: #333;
+      --кнп-в-корзину: #00aaff;
+      --кнп-смотреть: #ffaa00;
+    }
+
+    body {
+      font-family: sans-serif;
+      background: var(--фон);
+      padding: 15px;
+    }
+    h1 {
+      font-size: 1.3em;
+      margin-bottom: 10px;
+      text-align: center;
+      color: var(--цвет-заголовка);
+    }
+
+    #search {
+      width: 100%;
+      padding: 8px 12px;
+      max-width: 93%;
+      margin-right: 30px;
+      margin-bottom: 40px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.95em;
+      box-shadow: 0 0 4px rgba(0,0,0,0.2);
+      background-color: var(--фон-поиска);
+      color: var(--текст-поиска);
+    }
+
+    #products {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--фон-карты);
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      padding: 10px;
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+
+    .title {
+      font-size: 1em;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+
+    .desc {
+      margin-top: 4px;
+      color: var(--текст-описания);
+      font-size: 0.9em;
+    }
+
+    .price {
+      margin-top: 6px;
+      color: var(--цвет-цены);
+      font-weight: bold;
+      font-size: 0.95em;
+    }
+
+    .stock {
+      margin-top: 4px;
+      color: var(--текст-остатка);
+      font-size: 0.85em;
+    }
+
+    .buttons {
+      margin-top: auto;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .buttons button {
+      flex: 1 1 45%;
+      padding: 6px;
+      font-size: 0.75em;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .buy-btn {
+      background: var(--кнп-в-корзину);
+      color: white;
+    }
+
+    .view-btn {
+      background: var(--кнп-смотреть);
+    }
+  </style>
+</head>
+<body>
+  <h1>🛍️ Витрина товаров</h1>
+  <input type="text" id="search" placeholder="🔍 Поиск по названию...">
+  <div id="products"></div>
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    const repo = 'iv4n-susanin/slot-webapp';
+    const api = `https://api.github.com/repos/${repo}/contents/cards`;
+    const raw = `https://raw.githubusercontent.com/${repo}/main/cards/`;
+    let allCards = [];
+
+    async function fetchProducts() {
+      const res = await fetch(api);
+      const files = await res.json();
+      allCards = [];
+
+      for (const file of files) {
+        if (!file.name.endsWith('.json')) continue;
+
+        const cardRes = await fetch(raw + file.name);
+        const card = await cardRes.json();
+        allCards.push(card);
+      }
+
+      renderCards(allCards);
+    }
+
+    function renderCards(cards) {
+      const container = document.getElementById('products');
+      container.innerHTML = '';
+
+      cards.forEach(card => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `
+          <img src="cards/${card.photo}" alt="Фото">
+          <div class="title">${card.title}</div>
+          <div class="desc">${card.desc}</div>
+          <div class="price">Цена: ${card.price} ₽</div>
+          <div class="stock">Остаток: ${card.stock} шт.</div>
+          <div class="buttons">
+            <button class="buy-btn">🛒 В корзину</button>
+            <button class="view-btn" onclick="alert('🔍 ${card.title}\n\n${card.desc}')">👁 Смотреть</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    document.getElementById('search').addEventListener('input', function () {
+      const query = this.value.toLowerCase();
+      const filtered = allCards.filter(card =>
+        card.title.toLowerCase().includes(query)
+      );
+      renderCards(filtered);
+    });
+
+    fetchProducts();
+  </script>
+</body>
+</html>
