@@ -126,58 +126,67 @@
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
-    const repo = 'iv4n-susanin/slot-webapp';
-    const api = `https://api.github.com/repos/${repo}/contents/cards`;
-    const raw = `https://raw.githubusercontent.com/${repo}/main/cards/`;
-    let allCards = [];
+  const repo = 'iv4n-susanin/slot-webapp';
+  const api = `https://api.github.com/repos/${repo}/contents/cards`;
+  const raw = `https://raw.githubusercontent.com/${repo}/main/cards/`;
+  let allCards = [];
 
-    async function fetchProducts() {
-      const res = await fetch(api);
-      const files = await res.json();
-      allCards = [];
+  async function fetchProducts() {
+    const res = await fetch(api);
+    const files = await res.json();
+    allCards = [];
 
-      for (const file of files) {
-        if (!file.name.endsWith('.json')) continue;
+    for (const file of files) {
+      if (!file.name.endsWith('.json')) continue;
 
-        const cardRes = await fetch(raw + file.name);
-        const card = await cardRes.json();
-        allCards.push(card);
-      }
-
-      renderCards(allCards);
+      const cardRes = await fetch(raw + file.name);
+      const card = await cardRes.json();
+      allCards.push(card);
     }
 
-    function renderCards(cards) {
-      const container = document.getElementById('products');
-      container.innerHTML = '';
+    renderCards(allCards);
 
-      cards.forEach(card => {
-        const div = document.createElement('div');
-        div.className = 'card';
-        div.innerHTML = `
-          <img src="cards/${card.photo}" alt="Фото">
-          <div class="title">${card.title}</div>
-          <div class="desc">${card.desc}</div>
-          <div class="price">Цена: ${card.price} ₽</div>
-          <div class="stock">Остаток: ${card.stock} шт.</div>
-          <div class="buttons">
-            <button class="buy-btn">🛒 В корзину</button>
-            <button class="view-btn" onclick="alert('🔍 ${card.title}\n\n${card.desc}')">👁 Смотреть</button>
-          </div>
-        `;
-        container.appendChild(div);
-      });
+    // ✅ Поддержка автопоиска по параметру ?search=
+    const params = new URLSearchParams(window.location.search);
+    const searchQuery = params.get("search");
+    if (searchQuery) {
+      const input = document.getElementById("search");
+      input.value = searchQuery;
+      input.dispatchEvent(new Event("input")); // запуск фильтрации
     }
+  }
 
-    document.getElementById('search').addEventListener('input', function () {
-      const query = this.value.toLowerCase();
-      const filtered = allCards.filter(card =>
-        card.title.toLowerCase().includes(query)
-      );
-      renderCards(filtered);
+  function renderCards(cards) {
+    const container = document.getElementById('products');
+    container.innerHTML = '';
+
+    cards.forEach(card => {
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.innerHTML = `
+        <img src="cards/${card.photo}" alt="Фото">
+        <div class="title">${card.title}</div>
+        <div class="desc">${card.desc}</div>
+        <div class="price">Цена: ${card.price} ₽</div>
+        <div class="stock">Остаток: ${card.stock} шт.</div>
+        <div class="buttons">
+          <button class="buy-btn">🛒 В корзину</button>
+          <button class="view-btn" onclick="alert('🔍 ${card.title}\n\n${card.desc}')">👁 Смотреть</button>
+        </div>
+      `;
+      container.appendChild(div);
     });
+  }
 
-    fetchProducts();
-  </script>
+  document.getElementById('search').addEventListener('input', function () {
+    const query = this.value.toLowerCase();
+    const filtered = allCards.filter(card =>
+      card.title.toLowerCase().includes(query)
+    );
+    renderCards(filtered);
+  });
+
+  fetchProducts();
+</script>
 </body>
 </html>
