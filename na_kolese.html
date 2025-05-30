@@ -142,78 +142,94 @@
   <div id="products"></div>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script>
-    const repo = 'iv4n-susanin/slot-webapp';
-    let allCards = [];
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+  const repo = 'iv4n-susanin/slot-webapp';
+  let allCards = [];
 
-    async function fetchProducts(adminId) {
-      if (!adminId) return;
+  async function fetchProducts(adminId) {
+    if (!adminId) return;
 
-      const api = `https://api.github.com/repos/${repo}/contents/cards/${adminId}`;
-      const raw = `https://raw.githubusercontent.com/${repo}/main/cards/${adminId}/`;
+    const api = `https://api.github.com/repos/${repo}/contents/cards/${adminId}`;
+    const raw = `https://raw.githubusercontent.com/${repo}/main/cards/${adminId}/`;
 
-      try {
-        const res = await fetch(api);
-        const files = await res.json();
+    try {
+      const res = await fetch(api);
+      const files = await res.json();
 
-        allCards = [];
+      allCards = [];
 
-        for (const file of files) {
-          if (!file.name.endsWith('.json')) continue;
+      for (const file of files) {
+        if (!file.name.endsWith('.json')) continue;
 
-          const cardRes = await fetch(raw + file.name);
-          const card = await cardRes.json();
-          allCards.push(card);
-        }
-
-        renderCards(allCards);
-
-        const params = new URLSearchParams(window.location.search);
-        const searchQuery = params.get("search");
-        if (searchQuery) {
-          const input = document.getElementById("search");
-          input.value = searchQuery;
-          input.dispatchEvent(new Event("input"));
-        }
-      } catch (err) {
-        console.error('Ошибка загрузки товаров:', err);
+        const cardRes = await fetch(raw + file.name);
+        const card = await cardRes.json();
+        allCards.push(card);
       }
+
+      renderCards(allCards);
+
+      // Применяем поиск, если задан
+      const searchInput = document.getElementById("search");
+      const params = new URLSearchParams(window.location.search);
+      const searchQuery = params.get("search");
+      if (searchQuery) {
+        searchInput.value = searchQuery;
+        searchInput.dispatchEvent(new Event("input"));
+      }
+    } catch (err) {
+      console.error('Ошибка загрузки товаров:', err);
     }
+  }
 
-    function renderCards(cards) {
-      const container = document.getElementById('products');
-      container.innerHTML = '';
+  function renderCards(cards) {
+    const container = document.getElementById('products');
+    container.innerHTML = '';
 
-      cards.forEach(card => {
-        const div = document.createElement('div');
-        div.className = 'card';
-        div.innerHTML = `
-          <img src="https://raw.githubusercontent.com/${repo}/main/cards/${card.photo}" alt="Фото">
-          <div class="title">${card.title}</div>
-          <div class="desc">${card.desc}</div>
-          <div class="price">Цена: ${card.price} ₽</div>
-          <div class="stock">Остаток: ${card.stock} шт.</div>
-          <div class="buttons">
-            <button class="buy-btn">🛒 В корзину</button>
-            <button class="view-btn" onclick="alert('🔍 ${card.title}\\n\\n${card.desc}')">👁 Смотреть</button>
-          </div>
-        `;
-        container.appendChild(div);
-      });
+    cards.forEach(card => {
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.innerHTML = `
+        <img src="https://raw.githubusercontent.com/${repo}/main/cards/${card.photo}" alt="Фото">
+        <div class="title">${card.title}</div>
+        <div class="desc">${card.desc}</div>
+        <div class="price">Цена: ${card.price} ₽</div>
+        <div class="stock">Остаток: ${card.stock} шт.</div>
+        <div class="buttons">
+          <button class="buy-btn">🛒 В корзину</button>
+          <button class="view-btn" onclick="alert('🔍 ${card.title}\\n\\n${card.desc}')">👁 Смотреть</button>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  document.getElementById('search').addEventListener('input', function () {
+    const query = this.value.toLowerCase();
+    const filtered = allCards.filter(card =>
+      card.title.toLowerCase().includes(query)
+    );
+    renderCards(filtered);
+  });
+
+  document.getElementById('adminSelect').addEventListener('change', function () {
+    const selectedAdmin = this.value;
+    fetchProducts(selectedAdmin);
+  });
+
+  // 🚀 При загрузке страницы — автоматически подставляем admin и запускаем
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const searchQuery = params.get("search");
+    const adminId = params.get("admin");
+
+    if (adminId) {
+      const adminSelect = document.getElementById('adminSelect');
+      adminSelect.value = adminId;
+      fetchProducts(adminId);
     }
+  });
+</script>
 
-    document.getElementById('search').addEventListener('input', function () {
-      const query = this.value.toLowerCase();
-      const filtered = allCards.filter(card =>
-        card.title.toLowerCase().includes(query)
-      );
-      renderCards(filtered);
-    });
-
-    document.getElementById('adminSelect').addEventListener('change', function () {
-      const selectedAdmin = this.value;
-      fetchProducts(selectedAdmin);
-    });
-  </script>
 </body>
 </html>
