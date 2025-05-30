@@ -17,6 +17,7 @@
       --кнп-в-корзину: #00aaff;
       --кнп-смотреть: #ffaa00;
     }
+
     body {
       font-family: sans-serif;
       background: var(--фон);
@@ -28,6 +29,7 @@
       text-align: center;
       color: var(--цвет-заголовка);
     }
+
     #search {
       width: 100%;
       padding: 8px 12px;
@@ -40,17 +42,20 @@
       background-color: var(--фон-поиска);
       color: var(--текст-поиска);
     }
+
     #adminSelect {
       margin-bottom: 20px;
       padding: 6px;
       border-radius: 6px;
       font-size: 0.95em;
     }
+
     #products {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
       gap: 12px;
     }
+
     .card {
       background: var(--фон-карты);
       border-radius: 12px;
@@ -60,40 +65,47 @@
       display: flex;
       flex-direction: column;
     }
+
     .card img {
       width: 100%;
       height: auto;
       border-radius: 8px;
       object-fit: cover;
     }
+
     .title {
       font-size: 1em;
       font-weight: bold;
       margin-top: 8px;
       color: #4c8cc9;
     }
+
     .desc {
       margin-top: 4px;
       color: var(--текст-описания);
       font-size: 0.9em;
     }
+
     .price {
       margin-top: 6px;
       color: var(--цвет-цены);
       font-weight: bold;
       font-size: 0.95em;
     }
+
     .stock {
       margin-top: 4px;
       color: var(--текст-остатка);
       font-size: 0.85em;
     }
+
     .buttons {
       margin-top: auto;
       display: flex;
       gap: 6px;
       flex-wrap: wrap;
     }
+
     .buttons button {
       flex: 1 1 45%;
       padding: 6px;
@@ -102,10 +114,12 @@
       border: none;
       cursor: pointer;
     }
+
     .buy-btn {
       background: var(--кнп-в-корзину);
       color: white;
     }
+
     .view-btn {
       background: var(--кнп-смотреть);
     }
