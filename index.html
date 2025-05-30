@@ -45,6 +45,7 @@
     font-size: 10px;
     display: flex;
     flex-direction: column;
+    "owner": update.effective_user.id  
   }
 
   .card img {
@@ -114,25 +115,25 @@
     const raw = `https://raw.githubusercontent.com/${repo}/main/cards/`;
     let allCards = [];
 
-    async function fetchProducts() {
-      const res = await fetch(api);
-      const files = await res.json();
-      const container = document.getElementById('products');
-      allCards = [];
+  async function fetchProducts() {
+    const res = await fetch(api);
+    const files = await res.json();
+    const container = document.getElementById('products');
+    allCards = [];
 
-      for (const file of files) {
-        if (!file.name.endsWith('.json')) continue;
+    for (const file of files) {
+      if (!file.name.endsWith('.json')) continue;
 
-        const cardRes = await fetch(raw + file.name);
-        const card = await cardRes.json();
-        allCards.push(card);
-      }
+      const cardRes = await fetch(raw + file.name);
+      const card = await cardRes.json();
 
-      const adminId = Telegram.WebApp.initDataUnsafe?.user?.id;
-      const ownCards = allCards.filter(c => c.owner_id == adminId);
-      renderCards(ownCards);
-    }
+      allCards.push(card);
+  }
 
+  const adminId = Telegram.WebApp.initDataUnsafe?.user?.id;
+  const ownCards = allCards.filter(c => c.owner == adminId); // 🛠️ ВОТ ТУТ исправлено
+  renderCards(ownCards);
+}
 
     function renderCards(cards) {
       const container = document.getElementById('products');
