@@ -7,37 +7,43 @@
   <style>
     body {
       font-family: sans-serif;
-      background: #1b1b1b;
-      color: #f0f0f0;
-      padding: 20px;
+      background: #161600;
+      padding: 15px;
     }
 
     h1 {
+      font-size: 1.3em;
+      margin-bottom: 10px;
       text-align: center;
-      color: #ffa500;
-      margin-bottom: 20px;
+      color: #a5a570;
     }
 
     #search {
       width: 100%;
-      padding: 10px;
+      padding: 8px 12px;
+      max-width: 93%;
+      margin-right: 30px;
+      margin-bottom: 40px;
       border-radius: 8px;
       border: none;
-      font-size: 1em;
-      margin-bottom: 20px;
+      font-size: 0.95em;
+      box-shadow: 0 0 4px rgba(0,0,0,0.2);
+      background-color: #e2e2d0;
+      color: #262618;
     }
 
     #products {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 15px;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 12px;
     }
 
     .card {
-      background: #2a2a2a;
-      border-radius: 10px;
-      padding: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      background: #9c9c79;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      padding: 7px;
+      font-size: 10px;
       display: flex;
       flex-direction: column;
     }
@@ -50,25 +56,27 @@
     }
 
     .title {
+      font-size: 1em;
       font-weight: bold;
       margin-top: 8px;
-      color: #4c8cc9;
     }
 
     .desc {
-      font-size: 0.9em;
       margin-top: 4px;
-      color: #ccc;
+      color: #e2e2d0;
+      font-size: 0.9em;
     }
 
     .price {
       margin-top: 6px;
-      color: #ff5555;
+      color: #ad0000;
       font-weight: bold;
+      font-size: 0.95em;
     }
 
     .stock {
-      color: #aaa;
+      margin-top: 4px;
+      color: #333;
       font-size: 0.85em;
     }
 
@@ -86,24 +94,21 @@
       border-radius: 6px;
       border: none;
       cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .buy-btn {
-      background: #00aa88;
-      color: white;
-    }
-
-    .view-btn {
-      background: #ffaa00;
-      color: black;
-    }
+    .edit-btn { background: #7cfa00; }
+    .delete-btn { background: #f66; color: white; }
   </style>
 </head>
 <body>
-  <h1>🛍️ Добро пожаловать!</h1>
+  <h1>🛍️ Режим администратора.</h1>
   <input type="text" id="search" placeholder="🔍 Поиск по названию...">
   <div id="products"></div>
 
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     const repo = 'iv4n-susanin/slot-webapp';
     const api = `https://api.github.com/repos/${repo}/contents/cards`;
@@ -111,27 +116,24 @@
     let allCards = [];
 
     async function fetchProducts() {
-      try {
-        const res = await fetch(api);
-        const files = await res.json();
-        allCards = [];
+      const res = await fetch(api);
+      const files = await res.json();
+      const container = document.getElementById('products');
+      allCards = [];
 
-        for (const file of files) {
-          if (!file.name.endsWith('.json')) continue;
+      for (const file of files) {
+        if (!file.name.endsWith('.json')) continue;
 
-          const fileName = file.name.replace('.json', '');
-          const cardRes = await fetch(`${raw}${file.name}`);
-          const card = await cardRes.json();
+        const cardRes = await fetch(raw + file.name);
+        const card = await cardRes.json();
 
-          // Добавляем путь к фото
-          card._photoURL = `${raw}${fileName}/${card.photo}`;
-          allCards.push(card);
-        }
+        // 🔧 картинка прямо в cards/
+        card._photoURL = `${raw}${card.photo}`;
 
-        renderCards(allCards);
-      } catch (err) {
-        console.error('Ошибка при загрузке товаров:', err);
+        allCards.push(card);
       }
+
+      renderCards(allCards);
     }
 
     function renderCards(cards) {
@@ -148,8 +150,8 @@
           <div class="price">Цена: ${card.price} ₽</div>
           <div class="stock">Остаток: ${card.stock} шт.</div>
           <div class="buttons">
-            <button class="buy-btn">🛒 В корзину</button>
-            <button class="view-btn" onclick="alert('🔍 ${card.title}\\n\\n${card.desc}')">👁 Смотреть</button>
+            <button class="edit-btn" onclick="editCard('${card.id}')">✏️ Редактировать</button>
+            <button class="delete-btn" onclick="deleteCard('${card.id}')">🗑️ Удалить</button>
           </div>
         `;
         container.appendChild(div);
@@ -164,7 +166,18 @@
       renderCards(filtered);
     });
 
-    window.addEventListener('DOMContentLoaded', fetchProducts);
+    function editCard(id) {
+      const url = `https://github.com/${repo}/edit/main/cards/${id}.json`;
+      window.open(url, '_blank');
+    }
+
+    function deleteCard(id) {
+      const confirmed = confirm("Удалить этот товар?");
+      if (!confirmed) return;
+      Telegram.WebApp.sendData(JSON.stringify({ action: 'delete', id }));
+    }
+
+    fetchProducts();
   </script>
 </body>
 </html>
