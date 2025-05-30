@@ -5,63 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>🛍️ Витрина товаров</title>
   <style>
-    :root {
-      --фон: #27323e;
-      --цвет-заголовка: #168dff;
-      --фон-поиска: #ffaa00;
-      --текст-поиска: #168dff;
-      --фон-карты: #181f26;
-      --текст-описания: #e2e2d0;
-      --цвет-цены: #ad0000;
-      --текст-остатка: #b8c6d2;
-      --кнп-в-корзину: #00aaff;
-      --кнп-смотреть: #ffaa00;
-    }
-
     body {
       font-family: sans-serif;
-      background: var(--фон);
-      padding: 15px;
+      background: #1b1b1b;
+      color: #f0f0f0;
+      padding: 20px;
     }
+
     h1 {
-      font-size: 1.3em;
-      margin-bottom: 10px;
       text-align: center;
-      color: var(--цвет-заголовка);
+      color: #ffa500;
+      margin-bottom: 20px;
     }
 
     #search {
       width: 100%;
-      padding: 8px 12px;
-      max-width: 93%;
-      margin-bottom: 20px;
+      padding: 10px;
       border-radius: 8px;
       border: none;
-      font-size: 0.95em;
-      box-shadow: 0 0 4px rgba(0,0,0,0.2);
-      background-color: var(--фон-поиска);
-      color: var(--текст-поиска);
-    }
-
-    #adminSelect {
+      font-size: 1em;
       margin-bottom: 20px;
-      padding: 6px;
-      border-radius: 6px;
-      font-size: 0.95em;
     }
 
     #products {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 15px;
     }
 
     .card {
-      background: var(--фон-карты);
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      background: #2a2a2a;
+      border-radius: 10px;
       padding: 10px;
-      font-size: 13px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
       display: flex;
       flex-direction: column;
     }
@@ -74,28 +50,25 @@
     }
 
     .title {
-      font-size: 1em;
       font-weight: bold;
       margin-top: 8px;
       color: #4c8cc9;
     }
 
     .desc {
-      margin-top: 4px;
-      color: var(--текст-описания);
       font-size: 0.9em;
+      margin-top: 4px;
+      color: #ccc;
     }
 
     .price {
       margin-top: 6px;
-      color: var(--цвет-цены);
+      color: #ff5555;
       font-weight: bold;
-      font-size: 0.95em;
     }
 
     .stock {
-      margin-top: 4px;
-      color: var(--текст-остатка);
+      color: #aaa;
       font-size: 0.85em;
     }
 
@@ -116,84 +89,49 @@
     }
 
     .buy-btn {
-      background: var(--кнп-в-корзину);
+      background: #00aa88;
       color: white;
     }
 
     .view-btn {
-      background: var(--кнп-смотреть);
+      background: #ffaa00;
+      color: black;
     }
   </style>
 </head>
 <body>
   <h1>🛍️ Добро пожаловать!</h1>
-
-  <select id="adminSelect">
-    <option value="">Все продавцы</option>
-  </select>
-
   <input type="text" id="search" placeholder="🔍 Поиск по названию...">
   <div id="products"></div>
 
   <script>
     const repo = 'iv4n-susanin/slot-webapp';
     const api = `https://api.github.com/repos/${repo}/contents/cards`;
-    const rawBase = `https://raw.githubusercontent.com/${repo}/main/cards/`;
-
+    const raw = `https://raw.githubusercontent.com/${repo}/main/cards/`;
     let allCards = [];
-    let filteredCards = [];
-    let selectedAdmin = '';
 
-async function fetchProducts() {
-  try {
-    const res = await fetch(api);
-    const files = await res.json();
-    const adminSet = new Set();
+    async function fetchProducts() {
+      try {
+        const res = await fetch(api);
+        const files = await res.json();
+        allCards = [];
 
-    for (const file of files) {
-      if (!file.name.endsWith('.json')) continue;
+        for (const file of files) {
+          if (!file.name.endsWith('.json')) continue;
 
-      const fileName = file.name;
-      const [userId] = fileName.split('_');
-      adminSet.add(userId);
+          const fileName = file.name.replace('.json', '');
+          const cardRes = await fetch(`${raw}${file.name}`);
+          const card = await cardRes.json();
 
-      const rawUrl = rawBase + fileName;
-      const cardRes = await fetch(rawUrl);
-      const card = await cardRes.json();
+          // Добавляем путь к фото
+          card._photoURL = `${raw}${fileName}/${card.photo}`;
+          allCards.push(card);
+        }
 
-      // Генерируем путь к фото
-      const photoFolder = fileName.replace('.json', '');
-      card._photoURL = `${rawBase}${photoFolder}/${card.photo}`;
-      card._admin = userId;
-
-      allCards.push(card);
-    }
-
-    populateAdminSelect([...adminSet]);
-    applyFilters();
-  } catch (err) {
-    console.error('Ошибка при загрузке товаров:', err);
-  }
-}
-
-    function populateAdminSelect(admins) {
-      const select = document.getElementById('adminSelect');
-      admins.sort().forEach(admin => {
-        const opt = document.createElement('option');
-        opt.value = admin;
-        opt.textContent = `🛒 ${admin}`;
-        select.appendChild(opt);
-      });
-    }
-
-    function applyFilters() {
-      const searchQuery = document.getElementById('search').value.toLowerCase();
-      filteredCards = allCards.filter(card => {
-        const matchesAdmin = selectedAdmin ? card._admin === selectedAdmin : true;
-        const matchesSearch = card.title.toLowerCase().includes(searchQuery);
-        return matchesAdmin && matchesSearch;
-      });
-      renderCards(filteredCards);
+        renderCards(allCards);
+      } catch (err) {
+        console.error('Ошибка при загрузке товаров:', err);
+      }
     }
 
     function renderCards(cards) {
@@ -204,7 +142,7 @@ async function fetchProducts() {
         const div = document.createElement('div');
         div.className = 'card';
         div.innerHTML = `
-          <img src="${card.photo.startsWith('http') ? card.photo : rawBase + card._admin + '/' + card.photo}" alt="Фото">
+          <img src="${card._photoURL}" alt="Фото">
           <div class="title">${card.title}</div>
           <div class="desc">${card.desc}</div>
           <div class="price">Цена: ${card.price} ₽</div>
@@ -218,14 +156,17 @@ async function fetchProducts() {
       });
     }
 
-    document.getElementById('search').addEventListener('input', applyFilters);
-    document.getElementById('adminSelect').addEventListener('change', function () {
-      selectedAdmin = this.value;
-      applyFilters();
+    document.getElementById('search').addEventListener('input', function () {
+      const query = this.value.toLowerCase();
+      const filtered = allCards.filter(card =>
+        card.title.toLowerCase().includes(query)
+      );
+      renderCards(filtered);
     });
 
     window.addEventListener('DOMContentLoaded', fetchProducts);
   </script>
 </body>
 </html>
+
 
