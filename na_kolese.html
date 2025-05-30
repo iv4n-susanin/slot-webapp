@@ -140,86 +140,86 @@
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
-    const repo = 'iv4n-susanin/slot-webapp';
+  const repo = 'iv4n-susanin/slot-webapp';
+  let allCards = [];
+  let filteredCards = [];
+  let selectedAdmin = '';
+
+  async function fetchAllProducts() {
     const admins = ['admin1', 'admin2', 'admin3'];
-    let allCards = [];
-    let currentAdmin = "";
+    allCards = [];
 
-    async function fetchAllProducts() {
-      allCards = [];
-      for (const admin of admins) {
-        const api = `https://api.github.com/repos/${repo}/contents/cards/${admin}`;
-        const raw = `https://raw.githubusercontent.com/${repo}/main/cards/${admin}/`;
-        try {
-          const res = await fetch(api);
-          const files = await res.json();
-          for (const file of files) {
-            if (!file.name.endsWith('.json')) continue;
-            const cardRes = await fetch(raw + file.name);
-            const card = await cardRes.json();
-            card._admin = admin;
-            allCards.push(card);
-          }
-        } catch (err) {
-          console.error(`Ошибка загрузки ${admin}:`, err);
+    for (const admin of admins) {
+      const api = `https://api.github.com/repos/${repo}/contents/cards/${admin}`;
+      const raw = `https://raw.githubusercontent.com/${repo}/main/cards/${admin}/`;
+
+      try {
+        const res = await fetch(api);
+        const files = await res.json();
+
+        for (const file of files) {
+          if (!file.name.endsWith('.json')) continue;
+
+          const cardRes = await fetch(raw + file.name);
+          const card = await cardRes.json();
+          card._admin = admin; // Добавляем информацию о магазине
+          allCards.push(card);
         }
+      } catch (err) {
+        console.error(`Ошибка при загрузке товаров из ${admin}:`, err);
       }
-      applyFilters();
     }
 
-    function applyFilters() {
-      const query = document.getElementById("search").value.toLowerCase();
-      const filtered = allCards.filter(card => {
-        const matchesAdmin = currentAdmin ? card._admin === currentAdmin : true;
-        const matchesSearch = card.title.toLowerCase().includes(query);
-        return matchesAdmin && matchesSearch;
-      });
-      renderCards(filtered);
-    }
+    applyFilters();
+  }
 
-    function renderCards(cards) {
-      const container = document.getElementById('products');
-      container.innerHTML = '';
-      cards.forEach(card => {
-        const div = document.createElement('div');
-        div.className = 'card';
-        div.innerHTML = `
-          <img src="https://raw.githubusercontent.com/${repo}/main/cards/${card._admin}/${card.photo}" alt="Фото">
-          <div class="title">${card.title}</div>
-          <div class="desc">${card.desc}</div>
-          <div class="price">Цена: ${card.price} ₽</div>
-          <div class="stock">Остаток: ${card.stock} шт.</div>
-          <div class="buttons">
-            <button class="buy-btn">🛒 В корзину</button>
-            <button class="view-btn" onclick="alert('🔍 ${card.title}\\n\\n${card.desc}')">👁 Смотреть</button>
-          </div>
-        `;
-        container.appendChild(div);
-      });
-    }
+  function applyFilters() {
+    const searchQuery = document.getElementById('search').value.toLowerCase();
 
-    document.getElementById("adminSelect").addEventListener("change", function () {
-      currentAdmin = this.value;
-      applyFilters();
+    filteredCards = allCards.filter(card => {
+      const matchesAdmin = selectedAdmin ? card._admin === selectedAdmin : true;
+      const matchesSearch = card.title.toLowerCase().includes(searchQuery);
+      return matchesAdmin && matchesSearch;
     });
 
-    document.getElementById("search").addEventListener("input", applyFilters);
+    renderCards(filteredCards);
+  }
 
-    window.addEventListener("DOMContentLoaded", () => {
-      const params = new URLSearchParams(window.location.search);
-      const adminId = params.get("admin");
-      const searchQuery = params.get("search");
+  function renderCards(cards) {
+    const container = document.getElementById('products');
+    container.innerHTML = '';
 
-      if (adminId) {
-        document.getElementById("adminSelect").value = adminId;
-        currentAdmin = adminId;
-      }
-      if (searchQuery) {
-        document.getElementById("search").value = searchQuery;
-      }
-
-      fetchAllProducts();
+    cards.forEach(card => {
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.innerHTML = `
+        <img src="https://raw.githubusercontent.com/${repo}/main/cards/${card._admin}/${card.photo}" alt="Фото">
+        <div class="title">${card.title}</div>
+        <div class="desc">${card.desc}</div>
+        <div class="price">Цена: ${card.price} ₽</div>
+        <div class="stock">Остаток: ${card.stock} шт.</div>
+        <div class="buttons">
+          <button class="buy-btn">🛒 В корзину</button>
+          <button class="view-btn" onclick="alert('🔍 ${card.title}\\n\\n${card.desc}')">👁 Смотреть</button>
+        </div>
+      `;
+      container.appendChild(div);
     });
-  </script>
+  }
+
+  document.getElementById('search').addEventListener('input', () => {
+    applyFilters();
+  });
+
+  document.getElementById('adminSelect').addEventListener('change', function () {
+    selectedAdmin = this.value;
+    applyFilters();
+  });
+
+  window.addEventListener('DOMContentLoaded', () => {
+    fetchAllProducts();
+  });
+</script>
+
 </body>
 </html>
