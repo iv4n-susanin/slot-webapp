@@ -144,31 +144,37 @@
     let filteredCards = [];
     let selectedAdmin = '';
 
-    async function fetchProducts() {
-      try {
-        const res = await fetch(api);
-        const files = await res.json();
-        const adminSet = new Set();
+async function fetchProducts() {
+  try {
+    const res = await fetch(api);
+    const files = await res.json();
+    const adminSet = new Set();
 
-        for (const file of files) {
-          if (!file.name.endsWith('.json')) continue;
+    for (const file of files) {
+      if (!file.name.endsWith('.json')) continue;
 
-          const [userId] = file.name.split('_');
-          adminSet.add(userId);
+      const fileName = file.name;
+      const [userId] = fileName.split('_');
+      adminSet.add(userId);
 
-          const rawUrl = rawBase + file.name;
-          const cardRes = await fetch(rawUrl);
-          const card = await cardRes.json();
-          card._admin = userId;
-          allCards.push(card);
-        }
+      const rawUrl = rawBase + fileName;
+      const cardRes = await fetch(rawUrl);
+      const card = await cardRes.json();
 
-        populateAdminSelect([...adminSet]);
-        applyFilters();
-      } catch (err) {
-        console.error('Ошибка при загрузке товаров:', err);
-      }
+      // Генерируем путь к фото
+      const photoFolder = fileName.replace('.json', '');
+      card._photoURL = `${rawBase}${photoFolder}/${card.photo}`;
+      card._admin = userId;
+
+      allCards.push(card);
     }
+
+    populateAdminSelect([...adminSet]);
+    applyFilters();
+  } catch (err) {
+    console.error('Ошибка при загрузке товаров:', err);
+  }
+}
 
     function populateAdminSelect(admins) {
       const select = document.getElementById('adminSelect');
