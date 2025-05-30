@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>🛍️ Витрина ваших товаров</title>
+  <title>🛠️ Панель администратора</title>
   <style>
     body {
       font-family: sans-serif;
@@ -20,8 +20,7 @@
       width: 100%;
       padding: 8px 12px;
       max-width: 93%;
-      margin-right: 30px;
-      margin-bottom: 40px;
+      margin-bottom: 20px;
       border-radius: 8px;
       border: none;
       font-size: 0.95em;
@@ -31,7 +30,7 @@
     }
     #products {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
       gap: 12px;
     }
     .card {
@@ -83,16 +82,13 @@
       border-radius: 6px;
       border: none;
       cursor: pointer;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
     .edit-btn { background: #7cfa00; }
     .delete-btn { background: #f66; color: white; }
   </style>
 </head>
 <body>
-  <h1>🛍️ Режим администратора.</h1>
+  <h1>🛠️ Панель администратора</h1>
   <input type="text" id="search" placeholder="🔍 Поиск по названию...">
   <div id="products"></div>
 
@@ -101,35 +97,51 @@
     const repo = 'iv4n-susanin/slot-webapp';
     const api = `https://api.github.com/repos/${repo}/contents/cards`;
     const raw = `https://raw.githubusercontent.com/${repo}/main/cards/`;
-    const imageBase = `https://raw.githubusercontent.com/${repo}/main/cards/img/`;
+    const imageBase = raw + 'img/';
+    const adminId = Telegram.WebApp.initDataUnsafe?.user?.id?.toString();
+
     let allCards = [];
 
     async function fetchProducts() {
-      const res = await fetch(api);
-      const files = await res.json();
-      allCards = [];
+      try {
+        const res = await fetch(api);
+        const files = await res.json();
+        allCards = [];
 
-      for (const file of files) {
-        if (!file.name.endsWith('.json')) continue;
+        for (const file of files) {
+          if (!file.name.endsWith('.json')) continue;
 
-        const cardRes = await fetch(raw + file.name);
-        const card = await cardRes.json();
-        card._id = file.name.replace('.json', '');
-        allCards.push(card);
+          if (!file.name.startsWith(adminId + "_")) continue; // 💡 Только свои карточки
+
+          const cardRes = await fetch(raw + file.name);
+          const card = await cardRes.json();
+
+          card._id = file.name.replace('.json', '');
+          card._photoURL = imageBase + card.photo;
+
+          allCards.push(card);
+        }
+
+        renderCards(allCards);
+      } catch (err) {
+        console.error("Ошибка загрузки карточек:", err);
       }
-
-      renderCards(allCards);
     }
 
     function renderCards(cards) {
       const container = document.getElementById('products');
       container.innerHTML = '';
 
-      cards.forEach(card => {
+      const query = document.getElementById('search').value.toLowerCase();
+      const filtered = cards.filter(card =>
+        card.title.toLowerCase().includes(query)
+      );
+
+      filtered.forEach(card => {
         const div = document.createElement('div');
         div.className = 'card';
         div.innerHTML = `
-          <img src="${imageBase + card.photo}" alt="Фото">
+          <img src="${card._photoURL}" alt="Фото">
           <div class="title">${card.title}</div>
           <div class="desc">${card.desc}</div>
           <div class="price">Цена: ${card.price} ₽</div>
@@ -143,14 +155,6 @@
       });
     }
 
-    document.getElementById('search').addEventListener('input', function () {
-      const query = this.value.toLowerCase();
-      const filtered = allCards.filter(card =>
-        card.title.toLowerCase().includes(query)
-      );
-      renderCards(filtered);
-    });
-
     function editCard(id) {
       const url = `https://github.com/${repo}/edit/main/cards/${id}.json`;
       window.open(url, '_blank');
@@ -162,7 +166,8 @@
       Telegram.WebApp.sendData(JSON.stringify({ action: 'delete', id }));
     }
 
-    fetchProducts();
+    document.getElementById('search').addEventListener('input', () => renderCards(allCards));
+    window.addEventListener('DOMContentLoaded', fetchProducts);
   </script>
 </body>
 </html>
