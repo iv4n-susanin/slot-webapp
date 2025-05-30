@@ -88,7 +88,7 @@
   </style>
 </head>
 <body>
-  <h1>🛠️ Панель администратора!</h1>
+  <h1>🛠️ Панель администратора</h1>
   <input type="text" id="search" placeholder="🔍 Поиск по названию...">
   <div id="products"></div>
 
@@ -97,7 +97,7 @@
     const repo = 'iv4n-susanin/slot-webapp';
     const api = `https://api.github.com/repos/${repo}/contents/cards`;
     const raw = `https://raw.githubusercontent.com/${repo}/main/cards/`;
-    const imageBase = `https://raw.githubusercontent.com/${repo}/main/cards/img/`;
+    const imageRaw = `https://raw.githubusercontent.com/${repo}/main/cards/img/`;
 
     const adminId = Telegram.WebApp.initDataUnsafe?.user?.id?.toString();
 
@@ -111,21 +111,20 @@
 
         for (const file of files) {
           if (!file.name.endsWith('.json')) continue;
-
-          if (!file.name.startsWith(adminId + "_")) continue; // 💡 Только свои карточки
+          if (!file.name.startsWith(adminId + "_")) continue;
 
           const cardRes = await fetch(raw + file.name);
           const card = await cardRes.json();
 
           card._id = file.name.replace('.json', '');
-          card._photoURL = imageBase + card.photo;
+          card._photoURL = imageRaw + card.photo;
 
           allCards.push(card);
         }
 
         renderCards(allCards);
       } catch (err) {
-        console.error("Ошибка загрузки карточек:", err);
+        console.error("❌ Ошибка загрузки:", err);
       }
     }
 
