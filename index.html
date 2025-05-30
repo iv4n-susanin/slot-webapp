@@ -130,10 +130,9 @@
       allCards.push(card);
     }
 
-    const adminId = Telegram.WebApp.initDataUnsafe?.user?.id;
-    const ownCards = allCards.filter(c => c.owner == adminId); // 🛠️ ВОТ ТУТ исправлено
-    renderCards(ownCards);
+    renderCards(allCards); // 👈 просто рендерим всё, без фильтра
   }
+
 
     function renderCards(cards) {
       const container = document.getElementById('products');
