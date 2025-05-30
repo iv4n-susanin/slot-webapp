@@ -23,6 +23,7 @@
       background: var(--фон);
       padding: 15px;
     }
+
     h1 {
       font-size: 1.3em;
       margin-bottom: 10px;
@@ -30,16 +31,24 @@
       color: var(--цвет-заголовка);
     }
 
+    #adminSelect,
     #search {
       width: 100%;
       padding: 8px 12px;
       max-width: 93%;
-      margin-right: 30px;
-      margin-bottom: 40px;
+      margin-bottom: 20px;
       border-radius: 8px;
       border: none;
       font-size: 0.95em;
       box-shadow: 0 0 4px rgba(0,0,0,0.2);
+    }
+
+    #adminSelect {
+      background-color: #e0e0e0;
+      color: #222;
+    }
+
+    #search {
       background-color: var(--фон-поиска);
       color: var(--текст-поиска);
     }
@@ -121,38 +130,53 @@
 </head>
 <body>
   <h1>🛍️ Добро пожаловать!</h1>
+
+  <select id="adminSelect">
+    <option value="">Выберите магазин...</option>
+    <option value="123456789">Магазин 1 (ID: 123456789)</option>
+    <option value="987654321">Магазин 2 (ID: 987654321)</option>
+    <!-- Добавь при необходимости ещё -->
+  </select>
+
   <input type="text" id="search" placeholder="🔍 Поиск по названию...">
   <div id="products"></div>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     const repo = 'iv4n-susanin/slot-webapp';
-    const api = `https://api.github.com/repos/${repo}/contents/cards`;
-    const raw = `https://raw.githubusercontent.com/${repo}/main/cards/`;
     let allCards = [];
 
-    async function fetchProducts() {
-      const res = await fetch(api);
-      const files = await res.json();
-      allCards = [];
+    async function fetchProducts(adminId) {
+      if (!adminId) return;
 
-      for (const file of files) {
-        if (!file.name.endsWith('.json')) continue;
+      const api = `https://api.github.com/repos/${repo}/contents/cards/${adminId}`;
+      const raw = `https://raw.githubusercontent.com/${repo}/main/cards/${adminId}/`;
 
-        const cardRes = await fetch(raw + file.name);
-        const card = await cardRes.json();
-        allCards.push(card);
-      }
+      try {
+        const res = await fetch(api);
+        const files = await res.json();
 
-      renderCards(allCards);
+        allCards = [];
 
-      // ✅ Автопоиск по параметру ?search=...
-      const params = new URLSearchParams(window.location.search);
-      const searchQuery = params.get("search");
-      if (searchQuery) {
-        const input = document.getElementById("search");
-        input.value = searchQuery;
-        input.dispatchEvent(new Event("input")); // запускаем фильтр
+        for (const file of files) {
+          if (!file.name.endsWith('.json')) continue;
+
+          const cardRes = await fetch(raw + file.name);
+          const card = await cardRes.json();
+          allCards.push(card);
+        }
+
+        renderCards(allCards);
+
+        const params = new URLSearchParams(window.location.search);
+        const searchQuery = params.get("search");
+        if (searchQuery) {
+          const input = document.getElementById("search");
+          input.value = searchQuery;
+          input.dispatchEvent(new Event("input"));
+        }
+      } catch (err) {
+        console.error('Ошибка загрузки товаров:', err);
       }
     }
 
@@ -186,7 +210,10 @@
       renderCards(filtered);
     });
 
-    fetchProducts(); // Запускаем всё
+    document.getElementById('adminSelect').addEventListener('change', function () {
+      const selectedAdmin = this.value;
+      fetchProducts(selectedAdmin);
+    });
   </script>
 </body>
 </html>
