@@ -161,8 +161,8 @@
           const cardRes = await fetch(rawUrl);
           const card = await cardRes.json();
 
-          const photoFolder = fileName.replace('.json', '');
-          card._photoURL = `${rawBase}${photoFolder}/${card.photo}`;
+          // ✅ Генерируем путь к фото по полному относительному пути из JSON
+          card._photoURL = `${rawBase}${card.photo}`;
           card._admin = userId;
 
           allCards.push(card);
@@ -222,6 +222,11 @@
       selectedAdmin = this.value;
       applyFilters();
     });
+
+    window.addEventListener('DOMContentLoaded', fetchProducts);
+  </script>
+</body>
+</html>
 
     window.addEventListener('DOMContentLoaded', fetchProducts);
   </script>
