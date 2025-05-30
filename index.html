@@ -28,18 +28,7 @@
       background-color: #e2e2d0;
       color: #262618;
     }
-    #adminSelect {
-      width: 30%;                /* Укорачиваем ширину */
-      max-width: 200px;          /* Ограничиваем по максимуму */
-      padding: 6px 10px;
-      border-radius: 8px;
-      font-size: 0.95em;
-      background-color: #ffaa00; /* Цвет фона */
-      color: #168dff;            /* Цвет текста */
-      border: none;
-      margin-bottom: 20px;
-      box-shadow: 0 0 4px rgba(0,0,0,0.2);
-    }
+    
     #products {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -101,9 +90,7 @@
 </head>
 <body>
   <h1>🛠️ Панель администратора</h1>
-  <select id="adminSelect">
-  <option value="">🛒 Выберите продавца</option>
-  </select>
+ 
   <input type="text" id="search" placeholder="🔍 Поиск по названию...">
   <div id="products"></div>
 
