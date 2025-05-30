@@ -129,97 +129,97 @@
   <h1>🛍️ Добро пожаловать!</h1>
 
   <select id="adminSelect">
-    <option value="">Все магазины</option>
-    <option value="admin1">🛒 Магазин 1</option>
-    <option value="admin2">🛍️ Магазин 2</option>
-    <option value="admin3">📦 Магазин 3</option>
+    <option value="">Все продавцы</option>
   </select>
 
   <input type="text" id="search" placeholder="🔍 Поиск по названию...">
   <div id="products"></div>
 
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
-  const repo = 'iv4n-susanin/slot-webapp';
-  let allCards = [];
-  let filteredCards = [];
-  let selectedAdmin = '';
+    const repo = 'iv4n-susanin/slot-webapp';
+    const api = `https://api.github.com/repos/${repo}/contents/cards`;
+    const rawBase = `https://raw.githubusercontent.com/${repo}/main/cards/`;
 
-  async function fetchAllProducts() {
-    const admins = ['admin1', 'admin2', 'admin3'];
-    allCards = [];
+    let allCards = [];
+    let filteredCards = [];
+    let selectedAdmin = '';
 
-    for (const admin of admins) {
-      const api = `https://api.github.com/repos/${repo}/contents/cards/${admin}`;
-      const raw = `https://raw.githubusercontent.com/${repo}/main/cards/${admin}/`;
-
+    async function fetchProducts() {
       try {
         const res = await fetch(api);
         const files = await res.json();
+        const adminSet = new Set();
 
         for (const file of files) {
           if (!file.name.endsWith('.json')) continue;
 
-          const cardRes = await fetch(raw + file.name);
+          const [userId] = file.name.split('_');
+          adminSet.add(userId);
+
+          const rawUrl = rawBase + file.name;
+          const cardRes = await fetch(rawUrl);
           const card = await cardRes.json();
-          card._admin = admin; // Добавляем информацию о магазине
+          card._admin = userId;
           allCards.push(card);
         }
+
+        populateAdminSelect([...adminSet]);
+        applyFilters();
       } catch (err) {
-        console.error(`Ошибка при загрузке товаров из ${admin}:`, err);
+        console.error('Ошибка при загрузке товаров:', err);
       }
     }
 
-    applyFilters();
-  }
+    function populateAdminSelect(admins) {
+      const select = document.getElementById('adminSelect');
+      admins.sort().forEach(admin => {
+        const opt = document.createElement('option');
+        opt.value = admin;
+        opt.textContent = `🛒 ${admin}`;
+        select.appendChild(opt);
+      });
+    }
 
-  function applyFilters() {
-    const searchQuery = document.getElementById('search').value.toLowerCase();
+    function applyFilters() {
+      const searchQuery = document.getElementById('search').value.toLowerCase();
+      filteredCards = allCards.filter(card => {
+        const matchesAdmin = selectedAdmin ? card._admin === selectedAdmin : true;
+        const matchesSearch = card.title.toLowerCase().includes(searchQuery);
+        return matchesAdmin && matchesSearch;
+      });
+      renderCards(filteredCards);
+    }
 
-    filteredCards = allCards.filter(card => {
-      const matchesAdmin = selectedAdmin ? card._admin === selectedAdmin : true;
-      const matchesSearch = card.title.toLowerCase().includes(searchQuery);
-      return matchesAdmin && matchesSearch;
+    function renderCards(cards) {
+      const container = document.getElementById('products');
+      container.innerHTML = '';
+
+      cards.forEach(card => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `
+          <img src="${card.photo.startsWith('http') ? card.photo : rawBase + card._admin + '/' + card.photo}" alt="Фото">
+          <div class="title">${card.title}</div>
+          <div class="desc">${card.desc}</div>
+          <div class="price">Цена: ${card.price} ₽</div>
+          <div class="stock">Остаток: ${card.stock} шт.</div>
+          <div class="buttons">
+            <button class="buy-btn">🛒 В корзину</button>
+            <button class="view-btn" onclick="alert('🔍 ${card.title}\\n\\n${card.desc}')">👁 Смотреть</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    document.getElementById('search').addEventListener('input', applyFilters);
+    document.getElementById('adminSelect').addEventListener('change', function () {
+      selectedAdmin = this.value;
+      applyFilters();
     });
 
-    renderCards(filteredCards);
-  }
-
-  function renderCards(cards) {
-    const container = document.getElementById('products');
-    container.innerHTML = '';
-
-    cards.forEach(card => {
-      const div = document.createElement('div');
-      div.className = 'card';
-      div.innerHTML = `
-        <img src="https://raw.githubusercontent.com/${repo}/main/cards/${card._admin}/${card.photo}" alt="Фото">
-        <div class="title">${card.title}</div>
-        <div class="desc">${card.desc}</div>
-        <div class="price">Цена: ${card.price} ₽</div>
-        <div class="stock">Остаток: ${card.stock} шт.</div>
-        <div class="buttons">
-          <button class="buy-btn">🛒 В корзину</button>
-          <button class="view-btn" onclick="alert('🔍 ${card.title}\\n\\n${card.desc}')">👁 Смотреть</button>
-        </div>
-      `;
-      container.appendChild(div);
-    });
-  }
-
-  document.getElementById('search').addEventListener('input', () => {
-    applyFilters();
-  });
-
-  document.getElementById('adminSelect').addEventListener('change', function () {
-    selectedAdmin = this.value;
-    applyFilters();
-  });
-
-  window.addEventListener('DOMContentLoaded', () => {
-    fetchAllProducts();
-  });
-</script>
-
+    window.addEventListener('DOMContentLoaded', fetchProducts);
+  </script>
 </body>
 </html>
+
