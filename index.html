@@ -128,8 +128,11 @@
         allCards.push(card);
       }
 
-      renderCards(allCards);
+      const adminId = Telegram.WebApp.initDataUnsafe?.user?.id;
+      const ownCards = allCards.filter(c => c.owner_id == adminId);
+      renderCards(ownCards);
     }
+
 
     function renderCards(cards) {
       const container = document.getElementById('products');
