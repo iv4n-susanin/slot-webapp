@@ -145,26 +145,36 @@
     let selectedAdmin = '';
 
 async function fetchProducts() {
-  const res = await fetch(api);
-  const files = await res.json();
-  allCards = [];
+  try {
+    const res = await fetch(api);
+    const files = await res.json();
+    const adminSet = new Set();
 
-  for (const file of files) {
-    if (!file.name.endsWith('.json')) continue;
+    for (const file of files) {
+      if (!file.name.endsWith('.json')) continue;
 
-    const fileName = file.name.replace('.json', '');
-    const cardRes = await fetch(raw + file.name);
-    const card = await cardRes.json();
+      const fileName = file.name;
+      const [userId] = fileName.split('_');
+      adminSet.add(userId);
 
-    // Генерируем ссылку на фото
-    card._photoURL = `${raw}${fileName}/${card.photo}`;
+      const rawUrl = rawBase + fileName;
+      const cardRes = await fetch(rawUrl);
+      const card = await cardRes.json();
 
-    allCards.push(card);
+      // Генерируем путь к фото
+      const photoFolder = fileName.replace('.json', '');
+      card._photoURL = `${rawBase}${photoFolder}/${card.photo}`;
+      card._admin = userId;
+
+      allCards.push(card);
+    }
+
+    populateAdminSelect([...adminSet]);
+    applyFilters();
+  } catch (err) {
+    console.error('Ошибка при загрузке товаров:', err);
   }
-
-  renderCards(allCards);
 }
-
 
     function populateAdminSelect(admins) {
       const select = document.getElementById('adminSelect');
