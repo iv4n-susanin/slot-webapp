@@ -3,108 +3,92 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>🛍️ Витрина ваших товаров</title>
+  <title>🛠️ Панель администратора</title>
   <style>
-  body {
-    font-family: sans-serif;
-    background: #161600;
-    padding: 15px;
-  }
-  h1 {
-    font-size: 1.3em;
-    margin-bottom: 10px;
-    text-align: center;
-    color: #a5a570;
-  }
-
-  #search {
-    width: 100%;
-    padding: 8px 12px;
-    max-width: 93%;
-    margin-right: 30px;
-    margin-bottom: 40px;
-    border-radius: 8px;
-    border: none;
-    font-size: 0.95em;
-    box-shadow: 0 0 4px rgba(0,0,0,0.2);
-    background-color: #e2e2d0; /* любой цвет: #fff, red, rgba(0,0,0,0.1) и т.д. */
-    color: #262618;            /* цвет текста, чтобы он был виден */
-  }
-
-  #products {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 12px;
-  }
-
-  .card {
-    background: #9c9c79;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    padding: 7px;
-    font-size: 10px;
-    display: flex;
-    flex-direction: column;
-    "owner": update.effective_user.id  
-  }
-
-  .card img {
-    width: 100%;
-    height: auto;
-    border-radius: 8px;
-    object-fit: cover;
-  }
-
-  .title {
-    font-size: 1em;
-    font-weight: bold;
-    margin-top: 8px;
-  }
-
-  .desc {
-    margin-top: 4px;
-    color: #e2e2d0;
-    font-size: 0.9em;
-  }
-
-  .price {
-    margin-top: 6px;
-    color: #ad0000;
-    font-weight: bold;
-    font-size: 0.95em;
-  }
-
-  .stock {
-    margin-top: 4px;
-    color: #333;
-    font-size: 0.85em;
-  }
-
-  .buttons {
-    margin-top: auto;
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-
-  .buttons button {
-    flex: 1 1 45%;
-    padding: 6px;
-    font-size: 0.75em;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  
-  .edit-btn { background: #7cfa00; }
-  .delete-btn { background: #f66; color: white; }
-</style>
+    body {
+      font-family: sans-serif;
+      background: #161600;
+      padding: 15px;
+    }
+    h1 {
+      font-size: 1.3em;
+      margin-bottom: 10px;
+      text-align: center;
+      color: #a5a570;
+    }
+    #search {
+      width: 100%;
+      padding: 8px 12px;
+      max-width: 93%;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.95em;
+      box-shadow: 0 0 4px rgba(0,0,0,0.2);
+      background-color: #e2e2d0;
+      color: #262618;
+    }
+    #products {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      background: #9c9c79;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      padding: 7px;
+      font-size: 10px;
+      display: flex;
+      flex-direction: column;
+    }
+    .card img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+    .title {
+      font-size: 1em;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+    .desc {
+      margin-top: 4px;
+      color: #e2e2d0;
+      font-size: 0.9em;
+    }
+    .price {
+      margin-top: 6px;
+      color: #ad0000;
+      font-weight: bold;
+      font-size: 0.95em;
+    }
+    .stock {
+      margin-top: 4px;
+      color: #333;
+      font-size: 0.85em;
+    }
+    .buttons {
+      margin-top: auto;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .buttons button {
+      flex: 1 1 45%;
+      padding: 6px;
+      font-size: 0.75em;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+    }
+    .edit-btn { background: #7cfa00; }
+    .delete-btn { background: #f66; color: white; }
+  </style>
 </head>
 <body>
-  <h1>🛍️ Режим администратора.</h1>
+  <h1>🛠️ Панель администратора</h1>
   <input type="text" id="search" placeholder="🔍 Поиск по названию...">
   <div id="products"></div>
 
@@ -113,56 +97,63 @@
     const repo = 'iv4n-susanin/slot-webapp';
     const api = `https://api.github.com/repos/${repo}/contents/cards`;
     const raw = `https://raw.githubusercontent.com/${repo}/main/cards/`;
+    const imageBase = raw + 'img/';
+    const adminId = Telegram.WebApp.initDataUnsafe?.user?.id?.toString();
+
     let allCards = [];
 
-  async function fetchProducts() {
-    const res = await fetch(api);
-    const files = await res.json();
-    const container = document.getElementById('products');
-    allCards = [];
+    async function fetchProducts() {
+      try {
+        const res = await fetch(api);
+        const files = await res.json();
+        allCards = [];
 
-    for (const file of files) {
-      if (!file.name.endsWith('.json')) continue;
+        for (const file of files) {
+          if (!file.name.endsWith('.json')) continue;
 
-      const cardRes = await fetch(raw + file.name);
-      const card = await cardRes.json();
+          if (!file.name.startsWith(adminId + "_")) continue; // 💡 Только свои карточки
 
-      allCards.push(card);
+          const cardRes = await fetch(raw + file.name);
+          const card = await cardRes.json();
+
+          card._id = file.name.replace('.json', '');
+          card._photoURL = imageBase + card.photo;
+
+          allCards.push(card);
+        }
+
+        renderCards(allCards);
+      } catch (err) {
+        console.error("Ошибка загрузки карточек:", err);
+      }
     }
-
-    renderCards(allCards); // 👈 просто рендерим всё, без фильтра
-  }
-
 
     function renderCards(cards) {
       const container = document.getElementById('products');
       container.innerHTML = '';
 
-      cards.forEach(card => {
+      const query = document.getElementById('search').value.toLowerCase();
+      const filtered = cards.filter(card =>
+        card.title.toLowerCase().includes(query)
+      );
+
+      filtered.forEach(card => {
         const div = document.createElement('div');
         div.className = 'card';
         div.innerHTML = `
-          <img src="cards/${card.photo}" alt="Фото">
+          <img src="${card._photoURL}" alt="Фото">
           <div class="title">${card.title}</div>
           <div class="desc">${card.desc}</div>
           <div class="price">Цена: ${card.price} ₽</div>
           <div class="stock">Остаток: ${card.stock} шт.</div>
           <div class="buttons">
-            <button class="edit-btn" onclick="editCard('${card.id}')">✏️ Редактировать</button>
-            <button class="delete-btn" onclick="deleteCard('${card.id}')">🗑️ Удалить</button>
+            <button class="edit-btn" onclick="editCard('${card._id}')">✏️ Редактировать</button>
+            <button class="delete-btn" onclick="deleteCard('${card._id}')">🗑️ Удалить</button>
           </div>
         `;
         container.appendChild(div);
       });
     }
-
-    document.getElementById('search').addEventListener('input', function () {
-      const query = this.value.toLowerCase();
-      const filtered = allCards.filter(card =>
-        card.title.toLowerCase().includes(query)
-      );
-      renderCards(filtered);
-    });
 
     function editCard(id) {
       const url = `https://github.com/${repo}/edit/main/cards/${id}.json`;
@@ -175,9 +166,8 @@
       Telegram.WebApp.sendData(JSON.stringify({ action: 'delete', id }));
     }
 
-    fetchProducts();
+    document.getElementById('search').addEventListener('input', () => renderCards(allCards));
+    window.addEventListener('DOMContentLoaded', fetchProducts);
   </script>
 </body>
 </html>
-
-
