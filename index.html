@@ -97,7 +97,8 @@
     const repo = 'iv4n-susanin/slot-webapp';
     const api = `https://api.github.com/repos/${repo}/contents/cards`;
     const raw = `https://raw.githubusercontent.com/${repo}/main/cards/`;
-    const imageBase = raw + 'img/';
+    const imageBase = `https://raw.githubusercontent.com/${repo}/main/cards/img/`;
+
     const adminId = Telegram.WebApp.initDataUnsafe?.user?.id?.toString();
 
     let allCards = [];
