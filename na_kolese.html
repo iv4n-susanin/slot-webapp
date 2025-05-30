@@ -129,7 +129,7 @@
   <h1>🛍️ Добро пожаловать!</h1>
 
   <select id="adminSelect">
-    <option value="">Выберите магазин</option>
+    <option value="">Все магазины</option>
     <option value="admin1">🛒 Магазин 1</option>
     <option value="admin2">🛍️ Магазин 2</option>
     <option value="admin3">📦 Магазин 3</option>
@@ -139,97 +139,87 @@
   <div id="products"></div>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script>
-  const repo = 'iv4n-susanin/slot-webapp';
-  let allCards = [];
-  let selectedAdmin = null; // 👈 глобальная переменная
+  <script>
+    const repo = 'iv4n-susanin/slot-webapp';
+    const admins = ['admin1', 'admin2', 'admin3'];
+    let allCards = [];
+    let currentAdmin = "";
 
-  async function fetchProducts(adminId) {
-    if (!adminId) return;
-
-    selectedAdmin = adminId;
-
-    const api = `https://api.github.com/repos/${repo}/contents/cards/${adminId}`;
-    const raw = `https://raw.githubusercontent.com/${repo}/main/cards/${adminId}/`;
-
-    try {
-      const res = await fetch(api);
-      const files = await res.json();
-
+    async function fetchAllProducts() {
       allCards = [];
-
-      for (const file of files) {
-        if (!file.name.endsWith('.json')) continue;
-
-        const cardRes = await fetch(raw + file.name);
-        const card = await cardRes.json();
-        allCards.push(card);
+      for (const admin of admins) {
+        const api = `https://api.github.com/repos/${repo}/contents/cards/${admin}`;
+        const raw = `https://raw.githubusercontent.com/${repo}/main/cards/${admin}/`;
+        try {
+          const res = await fetch(api);
+          const files = await res.json();
+          for (const file of files) {
+            if (!file.name.endsWith('.json')) continue;
+            const cardRes = await fetch(raw + file.name);
+            const card = await cardRes.json();
+            card._admin = admin;
+            allCards.push(card);
+          }
+        } catch (err) {
+          console.error(`Ошибка загрузки ${admin}:`, err);
+        }
       }
-
-      renderCards(allCards);
-
-      // Применяем поиск из URL после загрузки карточек
-      const params = new URLSearchParams(window.location.search);
-      const searchQuery = params.get("search");
-      if (searchQuery) {
-        const input = document.getElementById("search");
-        input.value = searchQuery;
-        input.dispatchEvent(new Event("input"));
-      }
-
-    } catch (err) {
-      console.error('Ошибка при загрузке товаров:', err);
+      applyFilters();
     }
-  }
 
-  function renderCards(cards) {
-    const container = document.getElementById('products');
-    container.innerHTML = '';
+    function applyFilters() {
+      const query = document.getElementById("search").value.toLowerCase();
+      const filtered = allCards.filter(card => {
+        const matchesAdmin = currentAdmin ? card._admin === currentAdmin : true;
+        const matchesSearch = card.title.toLowerCase().includes(query);
+        return matchesAdmin && matchesSearch;
+      });
+      renderCards(filtered);
+    }
 
-    cards.forEach(card => {
-      const div = document.createElement('div');
-      div.className = 'card';
-      div.innerHTML = `
-        <img src="https://raw.githubusercontent.com/${repo}/main/cards/${selectedAdmin}/${card.photo}" alt="Фото">
-        <div class="title">${card.title}</div>
-        <div class="desc">${card.desc}</div>
-        <div class="price">Цена: ${card.price} ₽</div>
-        <div class="stock">Остаток: ${card.stock} шт.</div>
-        <div class="buttons">
-          <button class="buy-btn">🛒 В корзину</button>
-          <button class="view-btn" onclick="alert('🔍 ${card.title}\\n\\n${card.desc}')">👁 Смотреть</button>
-        </div>
-      `;
-      container.appendChild(div);
+    function renderCards(cards) {
+      const container = document.getElementById('products');
+      container.innerHTML = '';
+      cards.forEach(card => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `
+          <img src="https://raw.githubusercontent.com/${repo}/main/cards/${card._admin}/${card.photo}" alt="Фото">
+          <div class="title">${card.title}</div>
+          <div class="desc">${card.desc}</div>
+          <div class="price">Цена: ${card.price} ₽</div>
+          <div class="stock">Остаток: ${card.stock} шт.</div>
+          <div class="buttons">
+            <button class="buy-btn">🛒 В корзину</button>
+            <button class="view-btn" onclick="alert('🔍 ${card.title}\\n\\n${card.desc}')">👁 Смотреть</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    document.getElementById("adminSelect").addEventListener("change", function () {
+      currentAdmin = this.value;
+      applyFilters();
     });
-  }
 
-  document.getElementById('search').addEventListener('input', function () {
-    const query = this.value.toLowerCase();
-    const filtered = allCards.filter(card =>
-      card.title.toLowerCase().includes(query)
-    );
-    renderCards(filtered);
-  });
+    document.getElementById("search").addEventListener("input", applyFilters);
 
-  document.getElementById('adminSelect').addEventListener('change', function () {
-    const selected = this.value;
-    fetchProducts(selected);
-  });
+    window.addEventListener("DOMContentLoaded", () => {
+      const params = new URLSearchParams(window.location.search);
+      const adminId = params.get("admin");
+      const searchQuery = params.get("search");
 
-  window.addEventListener('DOMContentLoaded', () => {
-    const params = new URLSearchParams(window.location.search);
-    const adminId = params.get("admin");
+      if (adminId) {
+        document.getElementById("adminSelect").value = adminId;
+        currentAdmin = adminId;
+      }
+      if (searchQuery) {
+        document.getElementById("search").value = searchQuery;
+      }
 
-    if (adminId) {
-      const select = document.getElementById("adminSelect");
-      select.value = adminId;
-      fetchProducts(adminId); // фильтрация произойдёт после загрузки
-    }
-  });
-</script>
-
+      fetchAllProducts();
+    });
+  </script>
 </body>
 </html>
-
