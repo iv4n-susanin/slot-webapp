@@ -96,11 +96,9 @@
   <script>
     const repo = 'iv4n-susanin/slot-webapp';
     const api = `https://api.github.com/repos/${repo}/contents/cards`;
-    const raw = `https://raw.githubusercontent.com/${repo}/main/cards/`;
-    const imageRaw = `https://raw.githubusercontent.com/${repo}/main/cards/img/`;
+    const rawBase = `https://raw.githubusercontent.com/${repo}/main/cards/`;
 
     const adminId = Telegram.WebApp.initDataUnsafe?.user?.id?.toString();
-
     let allCards = [];
 
     async function fetchProducts() {
@@ -113,18 +111,19 @@
           if (!file.name.endsWith('.json')) continue;
           if (!file.name.startsWith(adminId + "_")) continue;
 
-          const cardRes = await fetch(raw + file.name);
+          const rawUrl = rawBase + file.name;
+          const cardRes = await fetch(rawUrl);
           const card = await cardRes.json();
 
           card._id = file.name.replace('.json', '');
-          card._photoURL = imageRaw + card.photo;
+          card._photoURL = rawBase + card.photo; // ✅ Путь работает, не меняй
 
           allCards.push(card);
         }
 
         renderCards(allCards);
       } catch (err) {
-        console.error("❌ Ошибка загрузки:", err);
+        console.error("❌ Ошибка загрузки карточек:", err);
       }
     }
 
@@ -171,3 +170,4 @@
   </script>
 </body>
 </html>
+
