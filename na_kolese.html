@@ -5,88 +5,95 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>🛍️ Витрина товаров</title>
   <style>
+    :root {
+      --фон: #27323e;
+      --цвет-заголовка: #168dff;
+      --фон-поиска: #ffaa00;
+      --текст-поиска: #168dff;
+      --фон-карты: #181f26;
+      --текст-описания: #e2e2d0;
+      --цвет-цены: #ad0000;
+      --текст-остатка: #b8c6d2;
+      --кнп-в-корзину: #00aaff;
+      --кнп-смотреть: #ffaa00;
+    }
     body {
       font-family: sans-serif;
-      background: #161600;
+      background: var(--фон);
       padding: 15px;
     }
-
     h1 {
       font-size: 1.3em;
       margin-bottom: 10px;
       text-align: center;
-      color: #a5a570;
+      color: var(--цвет-заголовка);
     }
-
     #search {
       width: 100%;
       padding: 8px 12px;
       max-width: 93%;
-      margin-right: 30px;
-      margin-bottom: 40px;
+      margin-bottom: 20px;
       border-radius: 8px;
       border: none;
       font-size: 0.95em;
       box-shadow: 0 0 4px rgba(0,0,0,0.2);
-      background-color: #e2e2d0;
-      color: #262618;
+      background-color: var(--фон-поиска);
+      color: var(--текст-поиска);
     }
-
+    #adminSelect {
+      margin-bottom: 20px;
+      padding: 6px;
+      border-radius: 6px;
+      font-size: 0.95em;
+    }
     #products {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
       gap: 12px;
     }
-
     .card {
-      background: #9c9c79;
+      background: var(--фон-карты);
       border-radius: 12px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      padding: 7px;
-      font-size: 10px;
+      padding: 10px;
+      font-size: 13px;
       display: flex;
       flex-direction: column;
     }
-
     .card img {
       width: 100%;
       height: auto;
       border-radius: 8px;
       object-fit: cover;
     }
-
     .title {
       font-size: 1em;
       font-weight: bold;
       margin-top: 8px;
+      color: #4c8cc9;
     }
-
     .desc {
       margin-top: 4px;
-      color: #e2e2d0;
+      color: var(--текст-описания);
       font-size: 0.9em;
     }
-
     .price {
       margin-top: 6px;
-      color: #ad0000;
+      color: var(--цвет-цены);
       font-weight: bold;
       font-size: 0.95em;
     }
-
     .stock {
       margin-top: 4px;
-      color: #333;
+      color: var(--текст-остатка);
       font-size: 0.85em;
     }
-
     .buttons {
       margin-top: auto;
       display: flex;
       gap: 6px;
       flex-wrap: wrap;
     }
-
     .buttons button {
       flex: 1 1 45%;
       padding: 6px;
@@ -94,46 +101,84 @@
       border-radius: 6px;
       border: none;
       cursor: pointer;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
-
-    .edit-btn { background: #7cfa00; }
-    .delete-btn { background: #f66; color: white; }
+    .buy-btn {
+      background: var(--кнп-в-корзину);
+      color: white;
+    }
+    .view-btn {
+      background: var(--кнп-смотреть);
+    }
   </style>
 </head>
 <body>
-  <h1>🛍️ Режим администратора.</h1>
+  <h1>🛍️ Добро пожаловать!</h1>
+
+  <select id="adminSelect">
+    <option value="">Все продавцы</option>
+  </select>
+
   <input type="text" id="search" placeholder="🔍 Поиск по названию...">
   <div id="products"></div>
 
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     const repo = 'iv4n-susanin/slot-webapp';
     const api = `https://api.github.com/repos/${repo}/contents/cards`;
-    const raw = `https://raw.githubusercontent.com/${repo}/main/cards/`;
+    const rawBase = `https://raw.githubusercontent.com/${repo}/main/cards/`;
+
     let allCards = [];
+    let filteredCards = [];
+    let selectedAdmin = '';
 
     async function fetchProducts() {
-      const res = await fetch(api);
-      const files = await res.json();
-      const container = document.getElementById('products');
-      allCards = [];
+      try {
+        const res = await fetch(api);
+        const files = await res.json();
+        const adminSet = new Set();
 
-      for (const file of files) {
-        if (!file.name.endsWith('.json')) continue;
+        for (const file of files) {
+          if (!file.name.endsWith('.json')) continue;
 
-        const cardRes = await fetch(raw + file.name);
-        const card = await cardRes.json();
+          const fileName = file.name;
+          const [userId] = fileName.split('_');
+          adminSet.add(userId);
 
-        // 🔧 картинка прямо в cards/
-        card._photoURL = `${raw}${card.photo}`;
+          const rawUrl = rawBase + fileName;
+          const cardRes = await fetch(rawUrl);
+          const card = await cardRes.json();
 
-        allCards.push(card);
+          const photoFolder = fileName.replace('.json', '');
+          card._photoURL = `${rawBase}${photoFolder}/${card.photo}`;
+          card._admin = userId;
+
+          allCards.push(card);
+        }
+
+        populateAdminSelect([...adminSet]);
+        applyFilters();
+      } catch (err) {
+        console.error('Ошибка при загрузке товаров:', err);
       }
+    }
 
-      renderCards(allCards);
+    function populateAdminSelect(admins) {
+      const select = document.getElementById('adminSelect');
+      admins.sort().forEach(admin => {
+        const opt = document.createElement('option');
+        opt.value = admin;
+        opt.textContent = `🛒 ${admin}`;
+        select.appendChild(opt);
+      });
+    }
+
+    function applyFilters() {
+      const searchQuery = document.getElementById('search').value.toLowerCase();
+      filteredCards = allCards.filter(card => {
+        const matchesAdmin = selectedAdmin ? card._admin === selectedAdmin : true;
+        const matchesSearch = card.title.toLowerCase().includes(searchQuery);
+        return matchesAdmin && matchesSearch;
+      });
+      renderCards(filteredCards);
     }
 
     function renderCards(cards) {
@@ -150,36 +195,21 @@
           <div class="price">Цена: ${card.price} ₽</div>
           <div class="stock">Остаток: ${card.stock} шт.</div>
           <div class="buttons">
-            <button class="edit-btn" onclick="editCard('${card.id}')">✏️ Редактировать</button>
-            <button class="delete-btn" onclick="deleteCard('${card.id}')">🗑️ Удалить</button>
+            <button class="buy-btn">🛒 В корзину</button>
+            <button class="view-btn" onclick="alert('🔍 ${card.title}\\n\\n${card.desc}')">👁 Смотреть</button>
           </div>
         `;
         container.appendChild(div);
       });
     }
 
-    document.getElementById('search').addEventListener('input', function () {
-      const query = this.value.toLowerCase();
-      const filtered = allCards.filter(card =>
-        card.title.toLowerCase().includes(query)
-      );
-      renderCards(filtered);
+    document.getElementById('search').addEventListener('input', applyFilters);
+    document.getElementById('adminSelect').addEventListener('change', function () {
+      selectedAdmin = this.value;
+      applyFilters();
     });
 
-    function editCard(id) {
-      const url = `https://github.com/${repo}/edit/main/cards/${id}.json`;
-      window.open(url, '_blank');
-    }
-
-    function deleteCard(id) {
-      const confirmed = confirm("Удалить этот товар?");
-      if (!confirmed) return;
-      Telegram.WebApp.sendData(JSON.stringify({ action: 'delete', id }));
-    }
-
-    fetchProducts();
+    window.addEventListener('DOMContentLoaded', fetchProducts);
   </script>
 </body>
 </html>
-
-
