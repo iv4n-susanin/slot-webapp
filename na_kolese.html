@@ -288,21 +288,31 @@
   }
 
   function sendOrder() {
-    if (cart.length === 0) return;
+  if (cart.length === 0) return;
 
-    let text = `🛒 *Новый заказ!*\n\n`;
-    cart.forEach(item => {
-      text += `• ${item.title} — ${item.price} ₽ × ${item.quantity} шт. (от ${item._admin})\n`;
-    });
+  const orderId = Math.floor(Math.random() * 900000 + 100000);
 
-    const orderId = Math.floor(Math.random() * 900000 + 100000);
-    text += `\n📦 *Номер заказа:* ${orderId}`;
+  const payload = {
+    action: "order",
+    orderId: orderId,
+    items: cart.map(item => ({
+      title: `${item._admin}_${item.title}`, // Пример: "5674056010_Товар"
+      count: item.quantity
+    }))
+  };
 
-    if (window.Telegram && Telegram.WebApp) {
-      Telegram.WebApp.sendData(text);
-    } else {
-      console.warn("Telegram.WebApp не доступен");
-    }
+  if (window.Telegram && Telegram.WebApp) {
+    Telegram.WebApp.sendData(JSON.stringify(payload));
+  } else {
+    console.warn("Telegram.WebApp не доступен");
+  }
+
+  cart = [];
+  updateCartCount();
+  closeCart();
+  alert("✅ Заказ отправлен!");
+}
+
 
     cart = [];
     updateCartCount();
