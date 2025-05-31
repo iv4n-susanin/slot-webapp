@@ -135,7 +135,7 @@
     </div>
   </div>
 
-  <script>
+<script>
   const repo = 'iv4n-susanin/slot-webapp';
   const api = `https://api.github.com/repos/${repo}/contents/cards`;
   const rawBase = `https://raw.githubusercontent.com/${repo}/main/cards/`;
@@ -159,6 +159,7 @@
         const card = await (await fetch(rawUrl)).json();
         card._photoURL = `${rawBase}${card.photo}`;
         card._admin = userId;
+        card.id = card.id || card.title + '_' + userId; // fallback ID
         allCards.push(card);
       }
 
@@ -222,16 +223,14 @@
         </div>
       `;
       const btn = div.querySelector('.buy-btn');
-      if (inCart) {
-        btn.style.background = "#666";
-      }
+      if (inCart) btn.style.background = "#666";
       btn.addEventListener('click', () => toggleCartItem(card));
       container.appendChild(div);
     });
   }
 
   function updateCartCount() {
-    document.getElementById('cartCount').textContent = cart.length;
+    document.getElementById('cartCount').textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
   }
 
   function showCart() {
@@ -243,13 +242,36 @@
       const grouped = groupCartBySeller();
       for (const seller in grouped) {
         const sellerBlock = document.createElement('div');
-        sellerBlock.innerHTML = `<strong>🛒 ${seller}</strong><ul>` +
-          grouped[seller].map(item => `<li>${item.title} – ${item.price} ₽</li>`).join('') +
-          '</ul>';
+        const items = grouped[seller];
+        sellerBlock.innerHTML = `<strong>🛒 ${seller}</strong>`;
+        const ul = document.createElement('ul');
+        items.forEach(item => {
+          const li = document.createElement('li');
+          li.innerHTML = `
+            ${item.title} – ${item.price} ₽ × 
+            <button onclick="changeQty('${item.id}', -1)">➖</button>
+            ${item.quantity}
+            <button onclick="changeQty('${item.id}', 1)">➕</button>
+          `;
+          ul.appendChild(li);
+        });
+        sellerBlock.appendChild(ul);
         container.appendChild(sellerBlock);
       }
     }
     document.getElementById('cartModal').style.display = 'flex';
+  }
+
+  function changeQty(id, delta) {
+    const item = cart.find(i => i.id === id);
+    if (item) {
+      item.quantity += delta;
+      if (item.quantity <= 0) {
+        cart = cart.filter(i => i.id !== id);
+      }
+      updateCartCount();
+      showCart();
+    }
   }
 
   function groupCartBySeller() {
@@ -266,19 +288,31 @@
   }
 
   function sendOrder() {
+    if (cart.length === 0) return;
+
+    const orderId = Math.floor(Math.random() * 900000 + 100000); // 6-значный
     const grouped = groupCartBySeller();
+    const sellers = Object.keys(grouped);
+    const allSellerNames = sellers.join(', ');
+
     for (const seller in grouped) {
-      const order = {
-        seller: seller,
-        items: grouped[seller].map(i => ({ title: i.title, price: i.price }))
-      };
-      console.log(`📤 Отправка заказа продавцу ${seller}:`, order);
-      // TODO: сюда вставить отправку заказа в Telegram / API
+      const items = grouped[seller];
+      const list = items.map(i => `${i.title} × ${i.quantity}`).join(', ');
+      const total = items.reduce((sum, i) => sum + i.quantity, 0);
+
+      const msg = `🧾 Заказ №${orderId}
+📦 Ваши товары: ${list}
+📌 Вы собираете ${total} поз. из общего заказа
+🛍️ Остальные продавцы: ${allSellerNames.replace(seller, '').replace(/, ,/g, ',').trim()}`;
+
+      console.log(`📤 ${seller} получил уведомление:\n${msg}`);
+      // TODO: здесь отправить в Telegram или через API
     }
+
     cart = [];
     updateCartCount();
     closeCart();
-    alert("✅ Заказ отправлен продавцам!");
+    alert("✅ Заказ отправлен всем продавцам!");
   }
 
   document.getElementById('cartButton').addEventListener('click', showCart);
@@ -290,6 +324,7 @@
   document.getElementById('search').addEventListener('input', applyFilters);
   window.addEventListener('DOMContentLoaded', fetchProducts);
 </script>
+
 
 </body>
 </html>
