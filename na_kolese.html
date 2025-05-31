@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>🍭️ Витрина товаров</title>
+  <title>🛍️ Витрина товаров</title>
   <style>
     :root {
       --фон: #27323e;
@@ -28,7 +28,6 @@
       text-align: center;
       color: var(--цвет-заголовка);
     }
-
     #search {
       width: 100%;
       padding: 8px 12px;
@@ -41,13 +40,11 @@
       background-color: var(--фон-поиска);
       color: var(--текст-поиска);
     }
-
     #products {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
       gap: 12px;
     }
-
     .card {
       background: var(--фон-карты);
       border-radius: 12px;
@@ -57,47 +54,40 @@
       display: flex;
       flex-direction: column;
     }
-
     .card img {
       width: 100%;
       height: auto;
       border-radius: 8px;
       object-fit: cover;
     }
-
     .title {
       font-size: 1em;
       font-weight: bold;
       margin-top: 8px;
       color: #4c8cc9;
     }
-
     .desc {
       margin-top: 4px;
       color: var(--текст-описания);
       font-size: 0.9em;
     }
-
     .price {
       margin-top: 6px;
       color: var(--цвет-цены);
       font-weight: bold;
       font-size: 0.95em;
     }
-
     .stock {
       margin-top: 4px;
       color: var(--текст-остатка);
       font-size: 0.85em;
     }
-
     .buttons {
       margin-top: auto;
       display: flex;
       gap: 6px;
       flex-wrap: wrap;
     }
-
     .buttons button {
       flex: 1 1 45%;
       padding: 6px;
@@ -106,20 +96,19 @@
       border: none;
       cursor: pointer;
     }
-
     .buy-btn {
       background: var(--кнп-в-корзину);
       color: white;
     }
-
     .view-btn {
       background: var(--кнп-смотреть);
     }
   </style>
 </head>
 <body>
-  <h1>🍭️ Добро пожаловать!</h1>
+  <h1>🛍️ Добро пожаловать!</h1>
 
+  <!-- Твои кастомные фильтры -->
   <div style="display: flex; gap: 7px; align-items: center; margin-bottom: 15px; flex-wrap: wrap;">
     <select id="adminSelect" style="padding: 8px 12px; border-radius: 8px; font-size: 0.95em; background-color: #ad0000; color: #ffaa00; border: none; box-shadow: 0 0 4px rgba(0,0,0,0.2);">
       <option value="">Все продавцы</option>
@@ -138,7 +127,158 @@
   <input type="text" id="search" placeholder="🔍 Поиск по названию...">
   <div id="products"></div>
 
-  <!-- Корзина и JS код без изменений -->
-  <!-- ... как в оригинале -->
+  <!-- Модальное окно корзины -->
+  <div id="cartModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:#fff; color:#000; padding:20px; border-radius:12px; max-width:500px; width:90%; max-height:90%; overflow:auto; position:relative;">
+      <h2>🛒 Корзина</h2>
+      <div id="cartItems"></div>
+      <button id="checkoutBtn" style="margin-top:15px; background:green; color:white; padding:10px; border:none; border-radius:8px;">📦 Заказать доставку</button>
+      <button onclick="closeCart()" style="position:absolute; top:10px; right:15px; font-size:20px;">✖</button>
+    </div>
+  </div>
+
+  <script>
+    const repo = 'iv4n-susanin/slot-webapp';
+    const api = `https://api.github.com/repos/${repo}/contents/cards`;
+    const rawBase = `https://raw.githubusercontent.com/${repo}/main/cards/`;
+
+    let allCards = [];
+    let filteredCards = [];
+    let selectedAdmin = '';
+    let cart = [];
+
+    async function fetchProducts() {
+      try {
+        const res = await fetch(api);
+        const files = await res.json();
+        const adminSet = new Set();
+
+        for (const file of files) {
+          if (!file.name.endsWith('.json')) continue;
+          const [userId] = file.name.split('_');
+          adminSet.add(userId);
+          const rawUrl = rawBase + file.name;
+          const card = await (await fetch(rawUrl)).json();
+          card._photoURL = `${rawBase}${card.photo}`;
+          card._admin = userId;
+          allCards.push(card);
+        }
+
+        populateAdminSelect([...adminSet]);
+        applyFilters();
+      } catch (err) {
+        console.error('Ошибка при загрузке товаров:', err);
+      }
+    }
+
+    function populateAdminSelect(admins) {
+      const select = document.getElementById('adminSelect');
+      admins.sort().forEach(admin => {
+        const opt = document.createElement('option');
+        opt.value = admin;
+        opt.textContent = `🛒 ${admin}`;
+        select.appendChild(opt);
+      });
+    }
+
+    function applyFilters() {
+      const query = document.getElementById('search').value.toLowerCase();
+      filteredCards = allCards.filter(card =>
+        (!selectedAdmin || card._admin === selectedAdmin) &&
+        card.title.toLowerCase().includes(query)
+      );
+      renderCards(filteredCards);
+    }
+
+    function renderCards(cards) {
+      const container = document.getElementById('products');
+      container.innerHTML = '';
+      cards.forEach(card => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `
+          <img src="${card._photoURL}" alt="Фото">
+          <div class="title">${card.title}</div>
+          <div class="desc">${card.desc}</div>
+          <div class="price">Цена: ${card.price} ₽</div>
+          <div class="stock">Остаток: ${card.stock} шт.</div>
+          <div class="buttons">
+            <button class="buy-btn">🛒 В корзину</button>
+            <button class="view-btn" onclick="alert('🔍 ${card.title}\\n\\n${card.desc}')">👁 Смотреть</button>
+          </div>
+        `;
+        div.querySelector('.buy-btn').addEventListener('click', () => addToCart(card));
+        container.appendChild(div);
+      });
+    }
+
+    function addToCart(card) {
+      cart.push(card);
+      updateCartCount();
+    }
+
+    function updateCartCount() {
+      document.getElementById('cartCount').textContent = cart.length;
+    }
+
+    function showCart() {
+      const container = document.getElementById('cartItems');
+      container.innerHTML = '';
+      if (cart.length === 0) {
+        container.innerHTML = '<p>Корзина пуста</p>';
+      } else {
+        const grouped = groupCartBySeller();
+        for (const seller in grouped) {
+          const sellerBlock = document.createElement('div');
+          sellerBlock.innerHTML = `<strong>🛒 ${seller}</strong><ul>` +
+            grouped[seller].map(item => `<li>${item.title} – ${item.price} ₽</li>`).join('') +
+            '</ul>';
+          container.appendChild(sellerBlock);
+        }
+      }
+      document.getElementById('cartModal').style.display = 'flex';
+    }
+
+    function groupCartBySeller() {
+      const map = {};
+      for (const item of cart) {
+        if (!map[item._admin]) map[item._admin] = [];
+        map[item._admin].push(item);
+      }
+      return map;
+    }
+
+    function closeCart() {
+      document.getElementById('cartModal').style.display = 'none';
+    }
+
+    function sendOrder() {
+      const grouped = groupCartBySeller();
+      for (const seller in grouped) {
+        const order = {
+          seller: seller,
+          items: grouped[seller].map(i => ({ title: i.title, price: i.price }))
+        };
+        console.log(`📤 Отправка заказа продавцу ${seller}:`, order);
+        // TODO: сюда вставить отправку заказа в Telegram / API
+      }
+      cart = [];
+      updateCartCount();
+      closeCart();
+      alert("✅ Заказ отправлен продавцам!");
+    }
+
+    document.getElementById('cartButton').addEventListener('click', showCart);
+    document.getElementById('checkoutBtn').addEventListener('click', sendOrder);
+    document.getElementById('adminSelect').addEventListener('change', function () {
+      selectedAdmin = this.value;
+      applyFilters();
+    });
+    document.getElementById('search').addEventListener('input', applyFilters);
+    window.addEventListener('DOMContentLoaded', fetchProducts);
+  </script>
+</body>
+</html>
+
 </body>
 </html>
