@@ -287,31 +287,20 @@
     document.getElementById('cartModal').style.display = 'none';
   }
 
-  function sendOrder() {
-  if (cart.length === 0) return;
-
-  const orderId = Math.floor(Math.random() * 900000 + 100000);
-
+function sendOrder() {
   const payload = {
-    action: "order",
-    orderId: orderId,
-    items: cart.map(item => ({
-      title: `${item._admin}_${item.title}`, // Пример: "5674056010_Товар"
-      count: item.quantity
-    }))
+    action: "test",
+    text: "Проверка отправки из WebApp",
+    time: new Date().toISOString()
   };
 
   if (window.Telegram && Telegram.WebApp) {
     Telegram.WebApp.sendData(JSON.stringify(payload));
   } else {
-    console.warn("Telegram.WebApp не доступен");
+    alert("Telegram.WebApp не доступен");
+    console.log("Telegram.WebApp:", window.Telegram);
   }
-
-  cart = [];
-  updateCartCount();
-  closeCart();
-  alert("✅ Заказ отправлен!");
-  }
+}
 
   document.getElementById('cartButton').addEventListener('click', showCart);
   document.getElementById('checkoutBtn').addEventListener('click', sendOrder);
