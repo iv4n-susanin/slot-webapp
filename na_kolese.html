@@ -306,6 +306,11 @@
 🛍️ Остальные продавцы: ${allSellerNames.replace(seller, '').replace(/, ,/g, ',').trim()}`;
 
       console.log(`📤 ${seller} получил уведомление:\n${msg}`);
+      if (window.Telegram && Telegram.WebApp) {
+        Telegram.WebApp.sendData(JSON.stringify(payload));
+      } else {
+      console.warn("Telegram.WebApp не доступен");
+      }
       // TODO: здесь отправить в Telegram или через API
     }
 
