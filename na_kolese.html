@@ -160,145 +160,183 @@
   </div>
 
   <script>
-    const repo = 'iv4n-susanin/slot-webapp';
-    const api = `https://api.github.com/repos/${repo}/contents/cards`;
-    const rawBase = `https://raw.githubusercontent.com/${repo}/main/cards/`;
+  const repo = 'iv4n-susanin/slot-webapp';
+  const api = `https://api.github.com/repos/${repo}/contents/cards`;
+  const rawBase = `https://raw.githubusercontent.com/${repo}/main/cards/`;
 
-    let allCards = [];
-    let filteredCards = [];
-    let selectedAdmin = '';
-    let cart = [];
+  let allCards = [];
+  let filteredCards = [];
+  let selectedAdmin = '';
+  let cart = {};
 
-    async function fetchProducts() {
-      try {
-        const res = await fetch(api);
-        const files = await res.json();
-        const adminSet = new Set();
+  async function fetchProducts() {
+    try {
+      const res = await fetch(api);
+      const files = await res.json();
+      const adminSet = new Set();
 
-        for (const file of files) {
-          if (!file.name.endsWith('.json')) continue;
-          const [userId] = file.name.split('_');
-          adminSet.add(userId);
-          const rawUrl = rawBase + file.name;
-          const card = await (await fetch(rawUrl)).json();
-          card._photoURL = `${rawBase}${card.photo}`;
-          card._admin = userId;
-          allCards.push(card);
-        }
-
-        populateAdminSelect([...adminSet]);
-        applyFilters();
-      } catch (err) {
-        console.error('Ошибка при загрузке товаров:', err);
+      for (const file of files) {
+        if (!file.name.endsWith('.json')) continue;
+        const [userId] = file.name.split('_');
+        adminSet.add(userId);
+        const rawUrl = rawBase + file.name;
+        const card = await (await fetch(rawUrl)).json();
+        card._photoURL = `${rawBase}${card.photo}`;
+        card._admin = userId;
+        allCards.push(card);
       }
-    }
 
-    function populateAdminSelect(admins) {
-      const select = document.getElementById('adminSelect');
-      admins.sort().forEach(admin => {
-        const opt = document.createElement('option');
-        opt.value = admin;
-        opt.textContent = `🛒 ${admin}`;
-        select.appendChild(opt);
-      });
+      populateAdminSelect([...adminSet]);
+      applyFilters();
+    } catch (err) {
+      console.error('Ошибка при загрузке товаров:', err);
     }
+  }
 
-    function applyFilters() {
-      const query = document.getElementById('search').value.toLowerCase();
-      filteredCards = allCards.filter(card =>
-        (!selectedAdmin || card._admin === selectedAdmin) &&
-        card.title.toLowerCase().includes(query)
-      );
-      renderCards(filteredCards);
-    }
+  function populateAdminSelect(admins) {
+    const select = document.getElementById('adminSelect');
+    admins.sort().forEach(admin => {
+      const opt = document.createElement('option');
+      opt.value = admin;
+      opt.textContent = `🛒 ${admin}`;
+      select.appendChild(opt);
+    });
+  }
 
-    function renderCards(cards) {
-      const container = document.getElementById('products');
-      container.innerHTML = '';
-      cards.forEach(card => {
-        const div = document.createElement('div');
-        div.className = 'card';
-        div.innerHTML = `
-          <img src="${card._photoURL}" alt="Фото">
-          <div class="title">${card.title}</div>
-          <div class="desc">${card.desc}</div>
-          <div class="price">Цена: ${card.price} ₽</div>
-          <div class="stock">Остаток: ${card.stock} шт.</div>
-          <div class="buttons">
-            <button class="buy-btn">🛒 В корзину</button>
-            <button class="view-btn" onclick="alert('🔍 ${card.title}\\n\\n${card.desc}')">👁 Смотреть</button>
-          </div>
-        `;
-        div.querySelector('.buy-btn').addEventListener('click', () => addToCart(card));
-        container.appendChild(div);
-      });
-    }
+  function applyFilters() {
+    const query = document.getElementById('search').value.toLowerCase();
+    filteredCards = allCards.filter(card =>
+      (!selectedAdmin || card._admin === selectedAdmin) &&
+      card.title.toLowerCase().includes(query)
+    );
+    renderCards(filteredCards);
+  }
 
-    function addToCart(card) {
-      cart.push(card);
-      updateCartCount();
-    }
-
-    function updateCartCount() {
-      document.getElementById('cartCount').textContent = cart.length;
-    }
-
-    function showCart() {
-      const container = document.getElementById('cartItems');
-      container.innerHTML = '';
-      if (cart.length === 0) {
-        container.innerHTML = '<p>Корзина пуста</p>';
-      } else {
-        const grouped = groupCartBySeller();
-        for (const seller in grouped) {
-          const sellerBlock = document.createElement('div');
-          sellerBlock.innerHTML = `<strong>🛒 ${seller}</strong><ul>` +
-            grouped[seller].map(item => `<li>${item.title} – ${item.price} ₽</li>`).join('') +
-            '</ul>';
-          container.appendChild(sellerBlock);
-        }
+  function renderCards(cards) {
+    const container = document.getElementById('products');
+    container.innerHTML = '';
+    cards.forEach(card => {
+      const inCart = cart[card.title];
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.innerHTML = `
+        <img src="${card._photoURL}" alt="Фото">
+        <div class="title">${card.title}</div>
+        <div class="desc">${card.desc}</div>
+        <div class="price">Цена: ${card.price} ₽</div>
+        <div class="stock">Остаток: ${card.stock} шт.</div>
+        <div class="buttons">
+          <button class="buy-btn">${inCart ? '✅ В корзине' : '🛒 В корзину'}</button>
+          <button class="view-btn" onclick="alert('🔍 ${card.title}\\n\\n${card.desc}')">👁 Смотреть</button>
+        </div>
+      `;
+      const buyBtn = div.querySelector('.buy-btn');
+      if (inCart) {
+        buyBtn.style.background = 'green';
       }
-      document.getElementById('cartModal').style.display = 'flex';
-    }
 
-    function groupCartBySeller() {
-      const map = {};
-      for (const item of cart) {
-        if (!map[item._admin]) map[item._admin] = [];
-        map[item._admin].push(item);
-      }
-      return map;
-    }
+      buyBtn.addEventListener('click', () => toggleCart(card));
+      container.appendChild(div);
+    });
+  }
 
-    function closeCart() {
-      document.getElementById('cartModal').style.display = 'none';
+  function toggleCart(card) {
+    if (cart[card.title]) {
+      // Если уже в корзине — удалить
+      delete cart[card.title];
+    } else {
+      cart[card.title] = { card: card, count: 1 };
     }
+    updateCartCount();
+    applyFilters(); // Обновить цвет кнопки
+  }
 
-    function sendOrder() {
+  function updateCartCount() {
+    const count = Object.values(cart).reduce((sum, item) => sum + item.count, 0);
+    document.getElementById('cartCount').textContent = count;
+  }
+
+  function showCart() {
+    const container = document.getElementById('cartItems');
+    container.innerHTML = '';
+    if (Object.keys(cart).length === 0) {
+      container.innerHTML = '<p>Корзина пуста</p>';
+    } else {
       const grouped = groupCartBySeller();
       for (const seller in grouped) {
-        const order = {
-          seller: seller,
-          items: grouped[seller].map(i => ({ title: i.title, price: i.price }))
-        };
-        console.log(`📤 Отправка заказа продавцу ${seller}:`, order);
-        // Тут будет запрос к боту
+        const sellerBlock = document.createElement('div');
+        sellerBlock.innerHTML = `<strong>🛒 ${seller}</strong>`;
+        const ul = document.createElement('ul');
+        grouped[seller].forEach(item => {
+          const li = document.createElement('li');
+          li.innerHTML = `
+            ${item.card.title} – ${item.card.price} ₽ 
+            <button onclick="changeQuantity('${item.card.title}', -1)">➖</button>
+            <strong>${item.count}</strong>
+            <button onclick="changeQuantity('${item.card.title}', 1)">➕</button>
+          `;
+          ul.appendChild(li);
+        });
+        sellerBlock.appendChild(ul);
+        container.appendChild(sellerBlock);
       }
-      cart = [];
-      updateCartCount();
-      closeCart();
-      alert("✅ Заказ отправлен продавцам!");
     }
+    document.getElementById('cartModal').style.display = 'flex';
+  }
 
-    document.getElementById('cartButton').addEventListener('click', showCart);
-    document.getElementById('checkoutBtn').addEventListener('click', sendOrder);
-    document.getElementById('adminSelect').addEventListener('change', function () {
-      selectedAdmin = this.value;
-      applyFilters();
-    });
-    document.getElementById('search').addEventListener('input', applyFilters);
-    window.addEventListener('DOMContentLoaded', fetchProducts);
-  </script>
+  function changeQuantity(title, delta) {
+    if (!cart[title]) return;
+    cart[title].count += delta;
+    if (cart[title].count <= 0) {
+      delete cart[title];
+    }
+    updateCartCount();
+    showCart();
+    applyFilters(); // Обновить кнопки на карточках
+  }
+
+  function groupCartBySeller() {
+    const map = {};
+    for (const item of Object.values(cart)) {
+      const admin = item.card._admin;
+      if (!map[admin]) map[admin] = [];
+      map[admin].push(item);
+    }
+    return map;
+  }
+
+  function closeCart() {
+    document.getElementById('cartModal').style.display = 'none';
+  }
+
+  function sendOrder() {
+    const grouped = groupCartBySeller();
+    for (const seller in grouped) {
+      const order = {
+        seller: seller,
+        items: grouped[seller].map(i => ({
+          title: i.card.title,
+          price: i.card.price,
+          count: i.count
+        }))
+      };
+      console.log(`📤 Отправка заказа продавцу ${seller}:`, order);
+    }
+    cart = {};
+    updateCartCount();
+    closeCart();
+    applyFilters();
+    alert("✅ Заказ отправлен продавцам!");
+  }
+
+  document.getElementById('cartButton').addEventListener('click', showCart);
+  document.getElementById('checkoutBtn').addEventListener('click', sendOrder);
+  document.getElementById('adminSelect').addEventListener('change', function () {
+    selectedAdmin = this.value;
+    applyFilters();
+  });
+  document.getElementById('search').addEventListener('input', applyFilters);
+  window.addEventListener('DOMContentLoaded', fetchProducts);
+</script>
 </body>
-
 </html>
