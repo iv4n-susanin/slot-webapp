@@ -144,7 +144,7 @@
   let filteredCards = [];
   let selectedAdmin = '';
   let cart = [];
-  <script>
+ 
   window.onload = function () {
     if (window.Telegram && Telegram.WebApp) {
       Telegram.WebApp.ready();
@@ -154,7 +154,7 @@
       console.warn("❌ Telegram.WebApp НЕ доступен");
     }
   }
-</script>
+
   async function fetchProducts() {
     try {
       const res = await fetch(api);
