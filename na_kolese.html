@@ -301,8 +301,10 @@
 
   // Отправка текста в Telegram WebApp
   if (window.Telegram && Telegram.WebApp) {
+    Telegram.WebApp.ready(); // <-- ВАЖНО
     Telegram.WebApp.sendData(text);
-  } else {
+  } 
+  else {
     console.warn("Telegram.WebApp не доступен");
   }
 
@@ -310,7 +312,7 @@
   updateCartCount();
   closeCart();
   alert("✅ Заказ отправлен!");
-}
+  }
 
 
   document.getElementById('cartButton').addEventListener('click', showCart);
