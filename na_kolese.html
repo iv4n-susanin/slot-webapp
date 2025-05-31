@@ -290,21 +290,20 @@
   function sendOrder() {
   if (cart.length === 0) return;
 
-  let text = `🛒 *Новый заказ!*\n\n`;
+  const orderId = Math.floor(Math.random() * 900000 + 100000);
 
-  cart.forEach(item => {
-    text += `• ${item.title} — ${item.price} ₽ × ${item.quantity} шт. (от ${item._admin})\n`;
-  });
+  const payload = {
+    action: "order",
+    orderId: orderId,
+    items: cart.map(item => ({
+      title: `${item._admin}_${item.title}`, // Пример: "5674056010_Товар"
+      count: item.quantity
+    }))
+  };
 
-  const orderId = Math.floor(Math.random() * 900000 + 100000); // Простой ID
-  text += `\n📦 *Номер заказа:* ${orderId}`;
-
-  // Отправка текста в Telegram WebApp
   if (window.Telegram && Telegram.WebApp) {
-    Telegram.WebApp.ready(); // <-- ВАЖНО
-    Telegram.WebApp.sendData(text);
-  } 
-  else {
+    Telegram.WebApp.sendData(JSON.stringify(payload));
+  } else {
     console.warn("Telegram.WebApp не доступен");
   }
 
@@ -313,7 +312,6 @@
   closeCart();
   alert("✅ Заказ отправлен!");
   }
-
 
   document.getElementById('cartButton').addEventListener('click', showCart);
   document.getElementById('checkoutBtn').addEventListener('click', sendOrder);
