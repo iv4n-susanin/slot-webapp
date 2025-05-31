@@ -159,7 +159,7 @@
         const card = await (await fetch(rawUrl)).json();
         card._photoURL = `${rawBase}${card.photo}`;
         card._admin = userId;
-        card.id = card.id || card.title + '_' + userId; // fallback ID
+        card.id = card.id || card.title + '_' + userId;
         allCards.push(card);
       }
 
@@ -288,32 +288,27 @@
   }
 
   function sendOrder() {
-  if (cart.length === 0) return;
+    if (cart.length === 0) return;
 
-  let text = `🛒 *Новый заказ!*\n\n`;
+    let text = `🛒 *Новый заказ!*\n\n`;
+    cart.forEach(item => {
+      text += `• ${item.title} — ${item.price} ₽ × ${item.quantity} шт. (от ${item._admin})\n`;
+    });
 
-  cart.forEach(item => {
-    text += `• ${item.title} — ${item.price} ₽ × ${item.quantity} шт. (от ${item._admin})\n`;
-  });
+    const orderId = Math.floor(Math.random() * 900000 + 100000);
+    text += `\n📦 *Номер заказа:* ${orderId}`;
 
-  const orderId = Math.floor(Math.random() * 900000 + 100000); // Простой ID
-  text += `\n📦 *Номер заказа:* ${orderId}`;
+    if (window.Telegram && Telegram.WebApp) {
+      Telegram.WebApp.sendData(text);
+    } else {
+      console.warn("Telegram.WebApp не доступен");
+    }
 
-  // Отправка текста в Telegram WebApp
-  if (window.Telegram && Telegram.WebApp) {
-    Telegram.WebApp.ready(); // <-- ВАЖНО
-    Telegram.WebApp.sendData(text);
-  } 
-  else {
-    console.warn("Telegram.WebApp не доступен");
+    cart = [];
+    updateCartCount();
+    closeCart();
+    alert("✅ Заказ отправлен!");
   }
-
-  cart = [];
-  updateCartCount();
-  closeCart();
-  alert("✅ Заказ отправлен!");
-  }
-
 
   document.getElementById('cartButton').addEventListener('click', showCart);
   document.getElementById('checkoutBtn').addEventListener('click', sendOrder);
@@ -322,9 +317,18 @@
     applyFilters();
   });
   document.getElementById('search').addEventListener('input', applyFilters);
-  window.addEventListener('DOMContentLoaded', fetchProducts);
+
+  // ✅ ВАЖНО: Telegram.WebApp.ready вызывается при загрузке
+  window.addEventListener('DOMContentLoaded', () => {
+    fetchProducts();
+    if (window.Telegram && Telegram.WebApp) {
+      Telegram.WebApp.ready();
+      console.log("✅ Telegram WebApp готов");
+    } else {
+      console.warn("❌ Telegram WebApp не доступен");
+    }
+  });
 </script>
-
-
 </body>
 </html>
+
