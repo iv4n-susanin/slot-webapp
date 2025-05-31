@@ -159,7 +159,7 @@
         const card = await (await fetch(rawUrl)).json();
         card._photoURL = `${rawBase}${card.photo}`;
         card._admin = userId;
-        card.id = card.id || card.title + '_' + userId;
+        card.id = card.id || card.title + '_' + userId; // fallback ID
         allCards.push(card);
       }
 
@@ -290,20 +290,21 @@
   function sendOrder() {
   if (cart.length === 0) return;
 
-  const orderId = Math.floor(Math.random() * 900000 + 100000);
+  let text = `🛒 *Новый заказ!*\n\n`;
 
-  const payload = {
-    action: "order",
-    orderId: orderId,
-    items: cart.map(item => ({
-      title: `${item._admin}_${item.title}`, // Пример: "5674056010_Товар"
-      count: item.quantity
-    }))
-  };
+  cart.forEach(item => {
+    text += `• ${item.title} — ${item.price} ₽ × ${item.quantity} шт. (от ${item._admin})\n`;
+  });
 
+  const orderId = Math.floor(Math.random() * 900000 + 100000); // Простой ID
+  text += `\n📦 *Номер заказа:* ${orderId}`;
+
+  // Отправка текста в Telegram WebApp
   if (window.Telegram && Telegram.WebApp) {
-    Telegram.WebApp.sendData(JSON.stringify(payload));
-  } else {
+    Telegram.WebApp.ready(); // <-- ВАЖНО
+    Telegram.WebApp.sendData(text);
+  } 
+  else {
     console.warn("Telegram.WebApp не доступен");
   }
 
@@ -311,14 +312,8 @@
   updateCartCount();
   closeCart();
   alert("✅ Заказ отправлен!");
-}
-
-
-    cart = [];
-    updateCartCount();
-    closeCart();
-    alert("✅ Заказ отправлен!");
   }
+
 
   document.getElementById('cartButton').addEventListener('click', showCart);
   document.getElementById('checkoutBtn').addEventListener('click', sendOrder);
@@ -327,18 +322,10 @@
     applyFilters();
   });
   document.getElementById('search').addEventListener('input', applyFilters);
-
-  // ✅ ВАЖНО: Telegram.WebApp.ready вызывается при загрузке
-  window.addEventListener('DOMContentLoaded', () => {
-    fetchProducts();
-    if (window.Telegram && Telegram.WebApp) {
-      Telegram.WebApp.ready();
-      console.log("✅ Telegram WebApp готов");
-    } else {
-      console.warn("❌ Telegram WebApp не доступен");
-    }
-  });
+  window.addEventListener('DOMContentLoaded', fetchProducts);
 </script>
+
+
 </body>
 </html>
  
