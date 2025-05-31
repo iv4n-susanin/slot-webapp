@@ -305,12 +305,12 @@
       }))
     };
 
-  // Отправляем данные в Telegram боту
-  if (window.Telegram && Telegram.WebApp) {
-    Telegram.WebApp.sendData(JSON.stringify(payload));
-  } else {
-    console.warn("Telegram.WebApp не доступен");
-  }
+    // Отправляем данные в Telegram боту
+    if (window.Telegram && Telegram.WebApp) {
+      Telegram.WebApp.sendData(JSON.stringify(payload));
+    } else {
+      console.warn("Telegram.WebApp не доступен");
+    }
 
   cart = [];
   updateCartCount();
