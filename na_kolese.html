@@ -137,14 +137,8 @@
     </div>
   </div>
 
-<script>
-  if (!window.Telegram || !Telegram.WebApp) {
-    document.body.innerHTML = `
-      <div style="color:white; background:red; padding:20px;">
-        ❌ Пожалуйста, откройте этот магазин внутри Telegram, через бота.
-      </div>
-    `;
-  }
+  <script>
+ 
   const repo = 'iv4n-susanin/slot-webapp';
   const api = `https://api.github.com/repos/${repo}/contents/cards`;
   const rawBase = `https://raw.githubusercontent.com/${repo}/main/cards/`;
@@ -161,8 +155,13 @@
       console.log("✅ Telegram.WebApp доступен");
     } else {
       console.warn("❌ Telegram.WebApp НЕ доступен");
+      document.body.innerHTML = `
+        <div style="color:white; background:red; padding:20px;">
+          ❌ Пожалуйста, откройте этот магазин внутри Telegram, через бота.
+        </div>
+      `;
     }
-  }
+  };
 
   async function fetchProducts() {
     try {
