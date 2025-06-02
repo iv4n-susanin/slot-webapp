@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>WebApp Test</title>
+  <script>
+    window.onload = () => {
+      if (window.Telegram && Telegram.WebApp) {
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
+        document.getElementById('status').textContent = '✅ Telegram WebApp готов';
+      } else {
+        document.getElementById('status').textContent = '❌ Telegram WebApp не доступен';
+      }
+    };
+
+    function sendTest() {
+      const payload = {
+        action: 'button_click',
+        text: 'Привет! Это тест.',
+        time: new Date().toISOString()
+      };
+      Telegram.WebApp.sendData(JSON.stringify(payload));
+    }
+  </script>
+</head>
+<body style="font-family: sans-serif; padding: 20px;">
+  <h2>🔘 Тест WebApp</h2>
+  <p id="status">⏳ Проверка Telegram.WebApp...</p>
+  <button onclick="sendTest()" style="padding:10px 20px;">🚀 Отправить событие</button>
+</body>
+</html>
