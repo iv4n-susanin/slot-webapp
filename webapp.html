@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>WebApp</title>
+  <title>WebApp Test</title>
   <script>
     window.onload = () => {
       if (window.Telegram && Telegram.WebApp) {
@@ -15,19 +15,17 @@
     };
 
     function sendTest() {
-      const payload = {
-        action: 'button_click',
-        text: 'Привет из WebApp!',
+      const data = {
+        text: '🧪 Тест кнопки WebApp!',
         time: new Date().toISOString()
       };
-      Telegram.WebApp.sendData(JSON.stringify(payload));
+      Telegram.WebApp.sendData(JSON.stringify(data));
     }
   </script>
 </head>
 <body style="font-family: sans-serif; padding: 20px;">
-  <h2>🔘 WebApp Тест</h2>
+  <h2>🔘 Тест WebApp</h2>
   <p id="status">⏳ Проверка Telegram.WebApp...</p>
   <button onclick="sendTest()" style="padding:10px 20px;">🚀 Отправить событие</button>
 </body>
 </html>
-
